@@ -597,3 +597,34 @@ input:focus, select:focus { border-color: rgba(229,255,63,.55); }
     grid-column: auto;
   }
 }
+
+
+/* Player card spacing fix */
+.player-card-body h3 {
+  margin: 2px 0 8px;
+  line-height: 1.05;
+}
+
+.player-card-body .nickname {
+  margin: 0 0 18px;
+  line-height: 1.2;
+  display: block;
+}
+
+.player-card-body .player-stats {
+  margin-top: 0;
+}
+
+.player-card-body .profile-card-cta {
+  margin-top: 18px;
+}
+
+@media (max-width: 680px) {
+  .player-card-body h3 {
+    margin-bottom: 6px;
+  }
+
+  .player-card-body .nickname {
+    margin-bottom: 14px;
+  }
+}

@@ -88,3 +88,18 @@ This version separates the two login paths:
 - Profile edits go through `update_own_player_profile`, which only updates nickname, bio, walk-on song and avatar for the currently authenticated player's own linked row.
 
 Run `profile-auth-security-fix.sql` in Supabase SQL Editor before deploying this version.
+
+
+## Clickable public player profiles
+
+Player cards now open dedicated public profile pages showing:
+- avatar
+- nickname
+- bio
+- walk-on song
+- played / won / lost / leg difference
+- season average
+- highest match average
+- five most recent completed results
+
+Players can still edit only their own profile through Player Login. Admin authentication remains separate under Admin.

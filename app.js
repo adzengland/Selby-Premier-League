@@ -304,11 +304,51 @@ function playerStats(name) {
   };
 }
 
+function playerSlug(name) {
+  return encodeURIComponent(name);
+}
+
+function getRecentMatches(name, limit = 5) {
+  const rows = [];
+
+  state.rounds.forEach(round => {
+    round.fixtures.forEach(f => {
+      const isP1 = f.p1 === name;
+      const isP2 = f.p2 === name;
+      if (!isP1 && !isP2) return;
+      if (f.s1 === null || f.s2 === null) return;
+
+      const ownScore = isP1 ? Number(f.s1) : Number(f.s2);
+      const oppScore = isP1 ? Number(f.s2) : Number(f.s1);
+      const ownAvg = isP1 ? f.a1 : f.a2;
+      const opponent = isP1 ? f.p2 : f.p1;
+
+      rows.push({
+        round: round.number,
+        date: round.date || "",
+        opponent,
+        ownScore,
+        oppScore,
+        result: ownScore > oppScore ? "W" : "L",
+        average: ownAvg === null || ownAvg === "" ? null : Number(ownAvg)
+      });
+    });
+  });
+
+  rows.sort((a, b) => {
+    if (a.date && b.date) return b.date.localeCompare(a.date);
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return b.round - a.round;
+  });
+
+  return rows.slice(0, limit);
+}
+
 function playerCard(player) {
   const stats = playerStats(player.name);
-  const displayName = player.nickname ? `"${player.nickname}"` : "";
   return `
-    <article class="card player-card">
+    <a class="card player-card player-card-link" href="#player/${playerSlug(player.name)}" aria-label="View ${player.name} profile">
       <div class="player-avatar-wrap">
         ${player.avatar_url
           ? `<img class="player-avatar" src="${player.avatar_url}" alt="${player.name}">`
@@ -317,24 +357,107 @@ function playerCard(player) {
       <div class="player-card-body">
         <span class="kicker">Player</span>
         <h3>${player.name}</h3>
-        ${displayName ? `<div class="nickname">${displayName}</div>` : ""}
-        ${player.bio ? `<p class="muted">${player.bio}</p>` : ""}
-        ${player.walk_on_song ? `<div class="small"><strong>Walk-on:</strong> ${player.walk_on_song}</div>` : ""}
+        ${player.nickname ? `<div class="nickname">"${player.nickname}"</div>` : ""}
         <div class="player-stats">
           <div><strong>${stats.p}</strong><span>P</span></div>
           <div><strong>${stats.w}</strong><span>W</span></div>
           <div><strong>${stats.ld > 0 ? "+" : ""}${stats.ld}</strong><span>LD</span></div>
           <div><strong>${stats.avg === null ? "—" : stats.avg.toFixed(2)}</strong><span>Avg</span></div>
-          <div><strong>${stats.highAvg === null ? "—" : stats.highAvg.toFixed(2)}</strong><span>High Avg</span></div>
+          <div><strong>${stats.highAvg === null ? "—" : stats.highAvg.toFixed(2)}</strong><span>High</span></div>
+        </div>
+        <div class="profile-card-cta">View profile →</div>
+      </div>
+    </a>`;
+}
+
+function renderPlayerProfile(playerName) {
+  const player = state.players.find(p => p.name === playerName);
+  if (!player) {
+    return `
+      <section class="section-head">
+        <div><span class="kicker">Players</span><h2>Profile not found</h2></div>
+        <a class="btn secondary" href="#players">Back to Players</a>
+      </section>`;
+  }
+
+  const stats = playerStats(player.name);
+  const recent = getRecentMatches(player.name, 5);
+  const ownsProfile = !!(state.user && player.user_id === state.user.id);
+
+  return `
+    <section class="profile-hero card">
+      <div class="profile-hero-avatar">
+        ${player.avatar_url
+          ? `<img class="player-avatar profile-large" src="${player.avatar_url}" alt="${player.name}">`
+          : `<div class="player-avatar placeholder profile-large">${initials(player.name)}</div>`}
+      </div>
+
+      <div class="profile-hero-copy">
+        <span class="kicker">Selby Premier League</span>
+        <h1>${player.name}</h1>
+        ${player.nickname ? `<div class="profile-nickname">"${player.nickname}"</div>` : ""}
+        ${player.bio
+          ? `<p class="profile-bio">${player.bio}</p>`
+          : `<p class="profile-bio muted">No bio added yet.</p>`}
+        ${player.walk_on_song
+          ? `<div class="walkon"><strong>Walk-on:</strong> ${player.walk_on_song}</div>`
+          : ""}
+
+        <div class="profile-actions">
+          <a class="btn secondary" href="#players">← All players</a>
+          ${ownsProfile ? `<a class="btn" href="#profile">Edit my profile</a>` : ""}
         </div>
       </div>
-    </article>`;
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><span class="kicker">Current form</span><h2>Season Stats</h2></div>
+      </div>
+
+      <div class="profile-stat-grid">
+        <div class="card soft"><div class="stat-value">${stats.p}</div><div class="stat-label">Played</div></div>
+        <div class="card soft"><div class="stat-value">${stats.w}</div><div class="stat-label">Won</div></div>
+        <div class="card soft"><div class="stat-value">${stats.l}</div><div class="stat-label">Lost</div></div>
+        <div class="card soft"><div class="stat-value">${stats.ld > 0 ? "+" : ""}${stats.ld}</div><div class="stat-label">Leg Difference</div></div>
+        <div class="card soft"><div class="stat-value">${stats.avg === null ? "—" : stats.avg.toFixed(2)}</div><div class="stat-label">Season Avg</div></div>
+        <div class="card soft"><div class="stat-value">${stats.highAvg === null ? "—" : stats.highAvg.toFixed(2)}</div><div class="stat-label">Highest Match Avg</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><span class="kicker">Latest</span><h2>Recent Results</h2></div>
+      </div>
+
+      <div class="card recent-results">
+        ${recent.length
+          ? recent.map(m => `
+              <div class="recent-result">
+                <div class="result-badge ${m.result === "W" ? "win" : "loss"}">${m.result}</div>
+                <div class="recent-result-main">
+                  <strong>${m.ownScore}–${m.oppScore} vs ${m.opponent}</strong>
+                  <div class="small">Round ${m.round}${m.date ? ` • ${formatDate(m.date)}` : ""}</div>
+                </div>
+                <div class="recent-result-avg">
+                  <span>Avg</span>
+                  <strong>${m.average === null ? "—" : m.average.toFixed(2)}</strong>
+                </div>
+              </div>
+            `).join("")
+          : `<div class="muted">No completed matches yet.</div>`}
+      </div>
+    </section>`;
 }
 
 function renderPlayers() {
   return `
     <section class="section-head">
-      <div><span class="kicker">The field</span><h2>Players</h2><div class="small">Profiles are public. Only the player who owns a profile can edit it.</div></div>
+      <div>
+        <span class="kicker">The field</span>
+        <h2>Players</h2>
+        <div class="small">Tap a player to view their profile, bio and latest stats.</div>
+      </div>
       <div>
         ${state.user
           ? `<a class="btn secondary" href="#profile">My Profile</a>`
@@ -555,6 +678,7 @@ function renderPlayerLogin() {
         <button class="btn" id="loginBtn">Sign in</button>
       </div>
       <div id="loginMessage" class="small"></div>
+      <div class="login-switch small">League administrator? <a href="#admin">Go to Admin login</a></div>
     </div>`;
 }
 
@@ -586,6 +710,7 @@ function renderAdminLogin() {
       </div>
 
       <div id="adminLoginMessage" class="small"></div>
+      <div class="login-switch small">Player account? <a href="#profile">Go to Player login</a></div>
     </div>`;
 }
 
@@ -983,6 +1108,9 @@ function route() {
     app.innerHTML = renderTablePage();
   } else if (routeName === "players") {
     app.innerHTML = renderPlayers();
+  } else if (routeName.startsWith("player/")) {
+    const playerName = decodeURIComponent(routeName.slice("player/".length));
+    app.innerHTML = renderPlayerProfile(playerName);
   } else if (routeName === "profile") {
     app.innerHTML = renderProfileEditor();
     bindAdmin();

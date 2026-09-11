@@ -75,3 +75,16 @@ to the matching `public.players.user_id`.
 
 Do not enable email-based password recovery for these synthetic accounts; Adam/admin
 can reset a player's password from Supabase Authentication if required.
+
+
+## Auth separation / public profiles
+
+This version separates the two login paths:
+
+- Normal players: Players > Player Login > name + issued password.
+- Adam/admin: Admin > original admin email/password OR Continue with Google.
+- Adam's existing Auth UUID can still be linked to the Adam England player row, so one identity is both admin and player without using the faux player login.
+- Player profile cards are public to everyone.
+- Profile edits go through `update_own_player_profile`, which only updates nickname, bio, walk-on song and avatar for the currently authenticated player's own linked row.
+
+Run `profile-auth-security-fix.sql` in Supabase SQL Editor before deploying this version.

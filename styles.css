@@ -390,3 +390,8 @@ input:focus, select:focus { border-color: rgba(229,255,63,.55); }
   color: inherit;
   font: inherit;
 }
+
+.login-card .admin-toolbar {
+  margin-top: 16px;
+  flex-wrap: wrap;
+}

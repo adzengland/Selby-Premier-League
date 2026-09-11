@@ -11,7 +11,7 @@ const PLAYERS = [
   "Jon Lunt"
 ];
 
-const PLAYER_LOGIN_EMAILS = {"Bob Wilcockson": "bob.wilcockson@spl.internal", "Adam England": "adam.england@gmail.com", "Aaron Mills": "aaron.mills@spl.internal", "Mark Dickinson": "mark.dickinson@spl.internal", "Craig Dickinson": "craig.dickinson@spl.internal", "Luke Kierans": "luke.kierans@spl.internal", "Patrick Kettlewell": "patrick.kettlewell@spl.internal", "Josh Gibbon": "josh.gibbon@spl.internal", "Tom Littlewood": "tom.littlewood@spl.internal", "Jon Lunt": "jon.lunt@spl.internal"};
+const PLAYER_LOGIN_EMAILS = {"Bob Wilcockson": "bob.wilcockson@spl.internal", "Aaron Mills": "aaron.mills@spl.internal", "Mark Dickinson": "mark.dickinson@spl.internal", "Craig Dickinson": "craig.dickinson@spl.internal", "Luke Kierans": "luke.kierans@spl.internal", "Patrick Kettlewell": "patrick.kettlewell@spl.internal", "Josh Gibbon": "josh.gibbon@spl.internal", "Tom Littlewood": "tom.littlewood@spl.internal", "Jon Lunt": "jon.lunt@spl.internal"};
 
 const config = window.SPL_CONFIG || {};
 const hasSupabase = !!(config.SUPABASE_URL && config.SUPABASE_ANON_KEY);
@@ -149,6 +149,15 @@ async function loadData() {
   state.fixturesLocked = !!settingsData?.fixtures_locked;
   state.players = playersData || [];
   state.loading = false;
+
+  if (state.user && localStorage.getItem("spl_post_auth_route") === "admin") {
+    localStorage.removeItem("spl_post_auth_route");
+    if (location.hash !== "#admin") {
+      location.hash = "#admin";
+      return;
+    }
+  }
+
   route();
 }
 
@@ -325,7 +334,7 @@ function playerCard(player) {
 function renderPlayers() {
   return `
     <section class="section-head">
-      <div><span class="kicker">The field</span><h2>Players</h2></div>
+      <div><span class="kicker">The field</span><h2>Players</h2><div class="small">Profiles are public. Only the player who owns a profile can edit it.</div></div>
       <div>
         ${state.user
           ? `<a class="btn secondary" href="#profile">My Profile</a>`
@@ -338,7 +347,7 @@ function renderPlayers() {
 }
 
 function renderProfileEditor() {
-  if (!state.user) return renderLogin();
+  if (!state.user) return renderAdminLogin();
 
   const player = state.players.find(p => p.user_id === state.user.id);
   if (!player) {
@@ -435,10 +444,12 @@ async function saveProfile() {
     avatar_url: avatarUrl
   };
 
-  const { error } = await sb
-    .from("players")
-    .update(patch)
-    .eq("user_id", state.user.id);
+  const { error } = await sb.rpc("update_own_player_profile", {
+    p_nickname: patch.nickname,
+    p_bio: patch.bio,
+    p_walk_on_song: patch.walk_on_song,
+    p_avatar_url: patch.avatar_url
+  });
 
   if (error) {
     msg.textContent = error.message;
@@ -519,7 +530,7 @@ function renderTablePage() {
     </section>`;
 }
 
-function renderLogin() {
+function renderPlayerLogin() {
   return `
     <section class="section-head">
       <div><span class="kicker">Players</span><h2>Player Login</h2></div>
@@ -528,12 +539,12 @@ function renderLogin() {
 
     <div class="card login-card">
       <h3>Sign in</h3>
-      <p class="muted">No email address needed. Pick your name and use the password you've been given.</p>
+      <p class="muted">No email address needed. Pick your name and use the password you\'ve been given. Adam uses the separate Admin sign-in.</p>
       <div class="field">
         <label>Player</label>
         <select id="loginPlayer">
           <option value="">Select your name…</option>
-          ${PLAYERS.map(name => `<option value="${name}">${name}</option>`).join("")}
+          ${PLAYERS.filter(name => name !== "Adam England").map(name => `<option value="${name}">${name}</option>`).join("")}
         </select>
       </div>
       <div class="field">
@@ -547,8 +558,39 @@ function renderLogin() {
     </div>`;
 }
 
+
+function renderAdminLogin() {
+  return `
+    <section class="section-head">
+      <div><span class="kicker">League control</span><h2>Admin Login</h2></div>
+      <div class="small">Separate from player password accounts.</div>
+    </section>
+
+    <div class="card login-card">
+      <h3>Admin sign in</h3>
+      <p class="muted">Use your original Supabase admin account, or continue with Google if that is how the account was created.</p>
+
+      <div class="field">
+        <label>Email</label>
+        <input id="adminEmail" type="email" autocomplete="email" placeholder="Admin email">
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input id="adminPassword" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+
+      <div class="admin-toolbar">
+        <button class="btn" id="adminLoginBtn">Sign in with email</button>
+        <button class="btn secondary" id="googleLoginBtn">Continue with Google</button>
+      </div>
+
+      <div id="adminLoginMessage" class="small"></div>
+    </div>`;
+}
+
 function renderAdmin() {
-  if (!state.user) return renderLogin();
+  if (!state.user) return renderPlayerLogin();
 
   if (!state.isAdmin) {
     return `
@@ -643,7 +685,7 @@ function renderAdmin() {
     </div>`;
 }
 
-async function signIn() {
+async function signInPlayer() {
   const playerName = document.querySelector("#loginPlayer")?.value;
   const password = document.querySelector("#loginPassword")?.value;
   const msg = document.querySelector("#loginMessage");
@@ -663,11 +705,52 @@ async function signIn() {
 
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
-    msg.textContent = "Wrong password, or this player account hasn't been created yet.";
+    msg.textContent = error.message || "Unable to sign in.";
     return;
   }
 
   await loadData();
+}
+
+
+async function signInAdmin() {
+  const email = document.querySelector("#adminEmail")?.value.trim();
+  const password = document.querySelector("#adminPassword")?.value;
+  const msg = document.querySelector("#adminLoginMessage");
+
+  if (!email || !password) {
+    if (msg) msg.textContent = "Enter your admin email and password.";
+    return;
+  }
+
+  if (msg) msg.textContent = "Signing in…";
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (msg) msg.textContent = error.message || "Unable to sign in.";
+    return;
+  }
+
+  await loadData();
+}
+
+async function signInAdminWithGoogle() {
+  const msg = document.querySelector("#adminLoginMessage");
+  if (msg) msg.textContent = "Opening Google sign-in…";
+
+  localStorage.setItem("spl_post_auth_route", "admin");
+
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}${window.location.pathname}`
+    }
+  });
+
+  if (error && msg) {
+    localStorage.removeItem("spl_post_auth_route");
+    msg.textContent = error.message || "Unable to start Google sign-in.";
+  }
 }
 
 async function signOut() {
@@ -772,11 +855,16 @@ function validateCompletedScore(fixture, changedKey, changedValue) {
 }
 
 function bindAdmin() {
-  document.querySelector("#loginBtn")?.addEventListener("click", signIn);
+  document.querySelector("#loginBtn")?.addEventListener("click", signInPlayer);
   document.querySelector("#loginPassword")?.addEventListener("keydown", e => {
-    if (e.key === "Enter") signIn();
+    if (e.key === "Enter") signInPlayer();
   });
 
+  document.querySelector("#adminLoginBtn")?.addEventListener("click", signInAdmin);
+  document.querySelector("#adminPassword")?.addEventListener("keydown", e => {
+    if (e.key === "Enter") signInAdmin();
+  });
+  document.querySelector("#googleLoginBtn")?.addEventListener("click", signInAdminWithGoogle);
   document.querySelector("#logoutBtn")?.addEventListener("click", signOut);
   document.querySelector("#saveProfileBtn")?.addEventListener("click", saveProfile);
   document.querySelector("#generateBtn")?.addEventListener("click", regenerateFixtures);

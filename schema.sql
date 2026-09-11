@@ -156,3 +156,41 @@ using (
   bucket_id = 'player-avatars'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
+
+
+-- SPL profile security + auth separation fix
+-- Public can continue to read player profiles via the existing "public read players" SELECT policy.
+-- Authenticated players can only change the four profile fields below via this RPC.
+
+drop policy if exists "players update own profile" on public.players;
+drop policy if exists "admins manage players" on public.players;
+
+revoke update on public.players from anon, authenticated;
+
+create or replace function public.update_own_player_profile(
+  p_nickname text,
+  p_bio text,
+  p_walk_on_song text,
+  p_avatar_url text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.players
+     set nickname = nullif(trim(p_nickname), ''),
+         bio = nullif(trim(p_bio), ''),
+         walk_on_song = nullif(trim(p_walk_on_song), ''),
+         avatar_url = nullif(trim(p_avatar_url), '')
+   where user_id = auth.uid();
+
+  if not found then
+    raise exception 'No player profile is linked to this login.';
+  end if;
+end;
+$$;
+
+revoke all on function public.update_own_player_profile(text, text, text, text) from public;
+grant execute on function public.update_own_player_profile(text, text, text, text) to authenticated;

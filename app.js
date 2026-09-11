@@ -612,7 +612,7 @@ function renderHome() {
       <img class="hero-logo" src="./assets/spl.png" alt="">
       <span class="kicker">2026/27 Season</span>
       <h1>Selby Premier League</h1>
-      <p>Ten players. Nine rounds. First to Five Legs. This is average darts at it's very best.</p>
+      <p>Ten players. Nine rounds. First to five legs. No points system — when the dust settles, the biggest leg difference wins the league.</p>
     </section>
 
     <section class="section grid three">
@@ -621,8 +621,12 @@ function renderHome() {
         <div class="stat-label">Matches played</div>
       </div>
       <div class="card soft">
-        <div class="stat-value">${leader ? (leader.ld > 0 ? "+" : "") + leader.ld : "0"}</div>
-        <div class="stat-label">Current best leg difference</div>
+        <div class="stat-value">${completedMatches() > 0 && leader ? leader.player : "TBD"}</div>
+        <div class="stat-label">
+          ${completedMatches() > 0 && leader
+            ? `Current league leader • ${leader.ld > 0 ? "+" : ""}${leader.ld} LD`
+            : "Current league leader"}
+        </div>
       </div>
       <div class="card soft">
         <div class="stat-value">${nextRound?.date ? formatDate(nextRound.date).replace(" 2026","").replace(" 2027","") : "TBD"}</div>

@@ -273,3 +273,120 @@ input:focus, select:focus { border-color: rgba(229,255,63,.55); }
 .login-card .field {
   margin-top: 14px;
 }
+
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.player-card {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.player-avatar-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.player-avatar {
+  width: 108px;
+  height: 108px;
+  border-radius: 22px;
+  object-fit: cover;
+  display: block;
+  border: 1px solid var(--line);
+}
+
+.player-avatar.placeholder {
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.06);
+  font-weight: 800;
+  font-size: 28px;
+}
+
+.player-avatar.large {
+  width: 150px;
+  height: 150px;
+}
+
+.nickname {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-top: -4px;
+  margin-bottom: 10px;
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.player-stats div {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.player-stats strong,
+.player-stats span {
+  display: block;
+}
+
+.player-stats span {
+  margin-top: 4px;
+  font-size: .72rem;
+  color: var(--muted);
+}
+
+.profile-editor {
+  max-width: 680px;
+}
+
+.profile-preview {
+  margin-bottom: 18px;
+}
+
+.profile-editor textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+@media (max-width: 780px) {
+  .players-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-card {
+    grid-template-columns: 84px 1fr;
+  }
+
+  .player-avatar {
+    width: 76px;
+    height: 76px;
+    border-radius: 18px;
+  }
+
+  .player-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.login-card select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+}

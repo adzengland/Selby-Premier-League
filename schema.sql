@@ -92,3 +92,67 @@ for all using (public.is_spl_admin()) with check (public.is_spl_admin());
 
 -- After creating your Supabase user, add its UUID here:
 -- insert into public.admin_users(user_id) values ('YOUR-AUTH-USER-UUID');
+
+
+-- Player profiles / self-service
+-- SPL player profiles migration
+alter table public.players
+  add column if not exists user_id uuid unique references auth.users(id) on delete set null,
+  add column if not exists nickname text null,
+  add column if not exists bio text null,
+  add column if not exists walk_on_song text null,
+  add column if not exists avatar_url text null;
+
+create index if not exists players_user_id_idx on public.players(user_id);
+
+create policy "players update own profile"
+on public.players
+for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "admins manage players"
+on public.players
+for all
+using (public.is_spl_admin())
+with check (public.is_spl_admin());
+
+insert into storage.buckets (id, name, public)
+values ('player-avatars', 'player-avatars', true)
+on conflict (id) do update set public = true;
+
+create policy "public read player avatars"
+on storage.objects
+for select
+using (bucket_id = 'player-avatars');
+
+create policy "players upload own avatar"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'player-avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+create policy "players update own avatar"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'player-avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+  bucket_id = 'player-avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+create policy "players delete own avatar"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'player-avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);

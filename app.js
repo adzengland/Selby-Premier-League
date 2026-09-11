@@ -11,6 +11,8 @@ const PLAYERS = [
   "Jon Lunt"
 ];
 
+const PLAYER_LOGIN_EMAILS = {"Bob Wilcockson": "bob.wilcockson@spl.internal", "Adam England": "adam.england@spl.internal", "Aaron Mills": "aaron.mills@spl.internal", "Mark Dickinson": "mark.dickinson@spl.internal", "Craig Dickinson": "craig.dickinson@spl.internal", "Luke Kierans": "luke.kierans@spl.internal", "Patrick Kettlewell": "patrick.kettlewell@spl.internal", "Josh Gibbon": "josh.gibbon@spl.internal", "Tom Littlewood": "tom.littlewood@spl.internal", "Jon Lunt": "jon.lunt@spl.internal"};
+
 const config = window.SPL_CONFIG || {};
 const hasSupabase = !!(config.SUPABASE_URL && config.SUPABASE_ANON_KEY);
 const sb = hasSupabase ? window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY) : null;
@@ -18,6 +20,7 @@ const sb = hasSupabase ? window.supabase.createClient(config.SUPABASE_URL, confi
 let state = {
   fixturesLocked: false,
   rounds: [],
+  players: [],
   user: null,
   isAdmin: false,
   loading: true,
@@ -113,14 +116,16 @@ async function loadData() {
   const [
     { data: roundsData, error: roundsError },
     { data: fixturesData, error: fixturesError },
-    { data: settingsData, error: settingsError }
+    { data: settingsData, error: settingsError },
+    { data: playersData, error: playersError }
   ] = await Promise.all([
     sb.from("rounds").select("*").order("round_number"),
     sb.from("fixtures").select("*").order("round_number").order("id"),
-    sb.from("league_settings").select("*").eq("id", 1).maybeSingle()
+    sb.from("league_settings").select("*").eq("id", 1).maybeSingle(),
+    sb.from("players").select("*").order("sort_order")
   ]);
 
-  const err = roundsError || fixturesError || settingsError;
+  const err = roundsError || fixturesError || settingsError || playersError;
   if (err) {
     state.error = err.message;
     state.loading = false;
@@ -142,6 +147,7 @@ async function loadData() {
   }));
 
   state.fixturesLocked = !!settingsData?.fixtures_locked;
+  state.players = playersData || [];
   state.loading = false;
   route();
 }
@@ -267,6 +273,181 @@ function fixturesMarkup(rounds = state.rounds) {
   `).join("");
 }
 
+
+function initials(name) {
+  return name.split(/\s+/).map(x => x[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function playerStats(name) {
+  const tableRow = getStandings().find(r => r.player === name);
+  let highAvg = null;
+  state.rounds.forEach(round => round.fixtures.forEach(f => {
+    if (f.p1 === name && f.a1 !== null && f.a1 !== "") highAvg = Math.max(highAvg ?? -Infinity, Number(f.a1));
+    if (f.p2 === name && f.a2 !== null && f.a2 !== "") highAvg = Math.max(highAvg ?? -Infinity, Number(f.a2));
+  }));
+  return {
+    p: tableRow?.p ?? 0,
+    w: tableRow?.w ?? 0,
+    l: tableRow?.l ?? 0,
+    ld: tableRow?.ld ?? 0,
+    avg: tableRow?.avg ?? null,
+    highAvg
+  };
+}
+
+function playerCard(player) {
+  const stats = playerStats(player.name);
+  const displayName = player.nickname ? `"${player.nickname}"` : "";
+  return `
+    <article class="card player-card">
+      <div class="player-avatar-wrap">
+        ${player.avatar_url
+          ? `<img class="player-avatar" src="${player.avatar_url}" alt="${player.name}">`
+          : `<div class="player-avatar placeholder">${initials(player.name)}</div>`}
+      </div>
+      <div class="player-card-body">
+        <span class="kicker">Player</span>
+        <h3>${player.name}</h3>
+        ${displayName ? `<div class="nickname">${displayName}</div>` : ""}
+        ${player.bio ? `<p class="muted">${player.bio}</p>` : ""}
+        ${player.walk_on_song ? `<div class="small"><strong>Walk-on:</strong> ${player.walk_on_song}</div>` : ""}
+        <div class="player-stats">
+          <div><strong>${stats.p}</strong><span>P</span></div>
+          <div><strong>${stats.w}</strong><span>W</span></div>
+          <div><strong>${stats.ld > 0 ? "+" : ""}${stats.ld}</strong><span>LD</span></div>
+          <div><strong>${stats.avg === null ? "—" : stats.avg.toFixed(2)}</strong><span>Avg</span></div>
+          <div><strong>${stats.highAvg === null ? "—" : stats.highAvg.toFixed(2)}</strong><span>High Avg</span></div>
+        </div>
+      </div>
+    </article>`;
+}
+
+function renderPlayers() {
+  return `
+    <section class="section-head">
+      <div><span class="kicker">The field</span><h2>Players</h2></div>
+      <div>
+        ${state.user
+          ? `<a class="btn secondary" href="#profile">My Profile</a>`
+          : `<a class="btn secondary" href="#profile">Player Login</a>`}
+      </div>
+    </section>
+    <div class="players-grid">
+      ${state.players.map(playerCard).join("")}
+    </div>`;
+}
+
+function renderProfileEditor() {
+  if (!state.user) return renderLogin();
+
+  const player = state.players.find(p => p.user_id === state.user.id);
+  if (!player) {
+    return `
+      <section class="section-head">
+        <div><span class="kicker">Your profile</span><h2>Player Profile</h2></div>
+      </section>
+      <div class="notice">
+        Your login hasn't been linked to a player yet. Ask Adam to link your account in Supabase.
+      </div>
+      <div class="admin-toolbar">
+        <button class="btn secondary" id="logoutBtn">Sign out</button>
+      </div>`;
+  }
+
+  return `
+    <section class="section-head">
+      <div><span class="kicker">Your profile</span><h2>${player.name}</h2></div>
+      <div class="small">Signed in as ${state.players.find(p => p.user_id === state.user.id)?.name || "SPL player"}</div>
+    </section>
+
+    <div class="card profile-editor">
+      <div class="profile-preview">
+        ${player.avatar_url
+          ? `<img class="player-avatar large" src="${player.avatar_url}" alt="${player.name}">`
+          : `<div class="player-avatar placeholder large">${initials(player.name)}</div>`}
+      </div>
+
+      <div class="field">
+        <label>Nickname</label>
+        <input id="profileNickname" type="text" maxlength="40" value="${player.nickname || ""}" placeholder="The Yorkshire Punisher">
+      </div>
+
+      <div class="field">
+        <label>Walk-on song</label>
+        <input id="profileWalkOn" type="text" maxlength="120" value="${player.walk_on_song || ""}" placeholder="Artist – Track">
+      </div>
+
+      <div class="field">
+        <label>Bio</label>
+        <textarea id="profileBio" maxlength="300" rows="5" placeholder="A few lines about your darts career...">${player.bio || ""}</textarea>
+      </div>
+
+      <div class="field">
+        <label>Avatar</label>
+        <input id="profileAvatar" type="file" accept="image/png,image/jpeg,image/webp">
+        <div class="small">PNG, JPG or WebP. Keep it sensible — this is a darts league, not Getty Images.</div>
+      </div>
+
+      <div class="admin-toolbar">
+        <button class="btn" id="saveProfileBtn">Save profile</button>
+        <button class="btn secondary" id="logoutBtn">Sign out</button>
+      </div>
+      <div id="profileMessage" class="small"></div>
+    </div>`;
+}
+
+async function saveProfile() {
+  const player = state.players.find(p => p.user_id === state.user?.id);
+  const msg = document.querySelector("#profileMessage");
+  if (!player || !msg) return;
+
+  msg.textContent = "Saving…";
+
+  let avatarUrl = player.avatar_url || null;
+  const file = document.querySelector("#profileAvatar")?.files?.[0];
+
+  if (file) {
+    if (file.size > 2 * 1024 * 1024) {
+      msg.textContent = "Avatar is too large. Keep it under 2 MB.";
+      return;
+    }
+
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${state.user.id}/avatar-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await sb.storage
+      .from("player-avatars")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      msg.textContent = uploadError.message;
+      return;
+    }
+
+    const { data } = sb.storage.from("player-avatars").getPublicUrl(path);
+    avatarUrl = data.publicUrl;
+  }
+
+  const patch = {
+    nickname: document.querySelector("#profileNickname")?.value.trim() || null,
+    walk_on_song: document.querySelector("#profileWalkOn")?.value.trim() || null,
+    bio: document.querySelector("#profileBio")?.value.trim() || null,
+    avatar_url: avatarUrl
+  };
+
+  const { error } = await sb
+    .from("players")
+    .update(patch)
+    .eq("user_id", state.user.id);
+
+  if (error) {
+    msg.textContent = error.message;
+    return;
+  }
+
+  await loadData();
+}
+
 function renderHome() {
   const standings = getStandings();
   const leader = standings[0];
@@ -341,16 +522,19 @@ function renderTablePage() {
 function renderLogin() {
   return `
     <section class="section-head">
-      <div><span class="kicker">League control</span><h2>Admin</h2></div>
-      <div class="small">Sign in to manage the league.</div>
+      <div><span class="kicker">Players</span><h2>Player Login</h2></div>
+      <div class="small">Choose your name and enter your SPL password.</div>
     </section>
 
     <div class="card login-card">
-      <h3>Admin sign in</h3>
-      <p class="muted">Use the Supabase user account you created for league administration.</p>
+      <h3>Sign in</h3>
+      <p class="muted">No email address needed. Pick your name and use the password you've been given.</p>
       <div class="field">
-        <label>Email</label>
-        <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com">
+        <label>Player</label>
+        <select id="loginPlayer">
+          <option value="">Select your name…</option>
+          ${PLAYERS.map(name => `<option value="${name}">${name}</option>`).join("")}
+        </select>
       </div>
       <div class="field">
         <label>Password</label>
@@ -372,7 +556,7 @@ function renderAdmin() {
         <div><span class="kicker">League control</span><h2>Admin</h2></div>
       </section>
       <div class="notice error">
-        You are signed in as <strong>${state.user.email}</strong>, but this account is not in the SPL admin list.
+        You are signed in, but this account does not have league-admin access.
       </div>
       <div class="admin-toolbar">
         <button class="btn secondary" id="logoutBtn">Sign out</button>
@@ -382,7 +566,7 @@ function renderAdmin() {
   return `
     <section class="section-head">
       <div><span class="kicker">League control</span><h2>Admin</h2></div>
-      <div class="small">Signed in as ${state.user.email}</div>
+      <div class="small">Signed in as ${state.players.find(p => p.user_id === state.user.id)?.name || "SPL player"}</div>
     </section>
 
     <div class="notice">
@@ -396,6 +580,7 @@ function renderAdmin() {
       <button class="btn secondary" id="lockBtn">
         ${state.fixturesLocked ? "Unlock fixtures" : "Lock fixtures"}
       </button>
+      <a class="btn secondary" href="#profile">My profile</a>
       <button class="btn secondary" id="logoutBtn">Sign out</button>
     </div>
 
@@ -459,12 +644,18 @@ function renderAdmin() {
 }
 
 async function signIn() {
-  const email = document.querySelector("#loginEmail")?.value.trim();
+  const playerName = document.querySelector("#loginPlayer")?.value;
   const password = document.querySelector("#loginPassword")?.value;
   const msg = document.querySelector("#loginMessage");
 
-  if (!email || !password) {
-    msg.textContent = "Enter your email and password.";
+  if (!playerName || !password) {
+    msg.textContent = "Choose your name and enter your password.";
+    return;
+  }
+
+  const email = PLAYER_LOGIN_EMAILS[playerName];
+  if (!email) {
+    msg.textContent = "That player login is not configured.";
     return;
   }
 
@@ -472,7 +663,7 @@ async function signIn() {
 
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
-    msg.textContent = error.message;
+    msg.textContent = "Wrong password, or this player account hasn't been created yet.";
     return;
   }
 
@@ -587,6 +778,7 @@ function bindAdmin() {
   });
 
   document.querySelector("#logoutBtn")?.addEventListener("click", signOut);
+  document.querySelector("#saveProfileBtn")?.addEventListener("click", saveProfile);
   document.querySelector("#generateBtn")?.addEventListener("click", regenerateFixtures);
   document.querySelector("#lockBtn")?.addEventListener("click", toggleLock);
 
@@ -701,6 +893,11 @@ function route() {
     app.innerHTML = renderFixtures();
   } else if (routeName === "table") {
     app.innerHTML = renderTablePage();
+  } else if (routeName === "players") {
+    app.innerHTML = renderPlayers();
+  } else if (routeName === "profile") {
+    app.innerHTML = renderProfileEditor();
+    bindAdmin();
   } else if (routeName === "admin") {
     app.innerHTML = renderAdmin();
     bindAdmin();

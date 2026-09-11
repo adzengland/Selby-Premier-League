@@ -44,3 +44,34 @@ The site will receive a free `*.pages.dev` address.
 ## Security note
 
 The value in `config.js` is a Supabase publishable key, which is intended for browser use. The database password and Supabase service-role/secret keys must never be added to the website.
+
+## Player profiles
+
+This version includes self-service player profiles.
+
+Before deploying it, run `player-profiles-migration.sql` in Supabase SQL Editor.
+
+Then create one Supabase Auth user per player and link that user's UUID to the matching row in `public.players`, for example:
+
+```sql
+update public.players
+set user_id = 'AUTH-USER-UUID-HERE'
+where name = 'Adam England';
+```
+
+Players can then sign in through the existing Admin/Profile login, edit only their own nickname, bio, walk-on song and avatar, while the SPL admin retains league-management access.
+
+Avatar images are stored in the public `player-avatars` Supabase Storage bucket and are restricted so authenticated users can only write inside their own UUID folder.
+
+## Simple player login
+
+The public site now asks players to select their name and enter a password. Internally,
+Supabase still authenticates using a synthetic `@spl.internal` identifier, but players
+never need to know or enter it.
+
+Use `player-login-setup.sql` as the account setup guide. Create each account in
+Supabase Authentication, auto-confirm it, give it a password, then link its User UID
+to the matching `public.players.user_id`.
+
+Do not enable email-based password recovery for these synthetic accounts; Adam/admin
+can reset a player's password from Supabase Authentication if required.

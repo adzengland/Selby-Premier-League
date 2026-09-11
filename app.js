@@ -612,7 +612,7 @@ function renderHome() {
       <img class="hero-logo" src="./assets/spl.png" alt="">
       <span class="kicker">2026/27 Season</span>
       <h1>Selby Premier League</h1>
-      <p>Ten players. Nine rounds. First to five legs. No points system — when the dust settles, the biggest leg difference wins the league.</p>
+      <p>Ten players. Nine rounds. First to Five Legs. This is average darts at it's very best.</p>
     </section>
 
     <section class="section grid three">

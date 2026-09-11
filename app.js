@@ -11,7 +11,7 @@ const PLAYERS = [
   "Jon Lunt"
 ];
 
-const PLAYER_LOGIN_EMAILS = {"Bob Wilcockson": "bob.wilcockson@spl.internal", "Adam England": "adam.england@spl.internal", "Aaron Mills": "aaron.mills@spl.internal", "Mark Dickinson": "mark.dickinson@spl.internal", "Craig Dickinson": "craig.dickinson@spl.internal", "Luke Kierans": "luke.kierans@spl.internal", "Patrick Kettlewell": "patrick.kettlewell@spl.internal", "Josh Gibbon": "josh.gibbon@spl.internal", "Tom Littlewood": "tom.littlewood@spl.internal", "Jon Lunt": "jon.lunt@spl.internal"};
+const PLAYER_LOGIN_EMAILS = {"Bob Wilcockson": "bob.wilcockson@spl.internal", "Adam England": "adam.england@gmail.com", "Aaron Mills": "aaron.mills@spl.internal", "Mark Dickinson": "mark.dickinson@spl.internal", "Craig Dickinson": "craig.dickinson@spl.internal", "Luke Kierans": "luke.kierans@spl.internal", "Patrick Kettlewell": "patrick.kettlewell@spl.internal", "Josh Gibbon": "josh.gibbon@spl.internal", "Tom Littlewood": "tom.littlewood@spl.internal", "Jon Lunt": "jon.lunt@spl.internal"};
 
 const config = window.SPL_CONFIG || {};
 const hasSupabase = !!(config.SUPABASE_URL && config.SUPABASE_ANON_KEY);

@@ -399,13 +399,33 @@ function renderPlayerProfile(playerName) {
         ${player.bio
           ? `<p class="profile-bio">${player.bio}</p>`
           : `<p class="profile-bio muted">No bio added yet.</p>`}
-        ${player.walk_on_song
-          ? `<div class="walkon"><strong>Walk-on:</strong> ${player.walk_on_song}</div>`
-          : ""}
 
         <div class="profile-actions">
           <a class="btn secondary" href="#players">← All players</a>
           ${ownsProfile ? `<a class="btn" href="#profile">Edit my profile</a>` : ""}
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><span class="kicker">Profile</span><h2>Player Details</h2></div>
+      </div>
+
+      <div class="profile-details-grid">
+        <div class="card profile-detail-card">
+          <span class="profile-detail-label">Nickname</span>
+          <strong>${player.nickname || "—"}</strong>
+        </div>
+
+        <div class="card profile-detail-card">
+          <span class="profile-detail-label">Walk-on song</span>
+          <strong>${player.walk_on_song || "—"}</strong>
+        </div>
+
+        <div class="card profile-detail-card profile-detail-wide">
+          <span class="profile-detail-label">Bio</span>
+          <div class="profile-detail-text">${player.bio || "No bio added yet."}</div>
         </div>
       </div>
     </section>
@@ -470,7 +490,7 @@ function renderPlayers() {
 }
 
 function renderProfileEditor() {
-  if (!state.user) return renderAdminLogin();
+  if (!state.user) return renderPlayerLogin();
 
   const player = state.players.find(p => p.user_id === state.user.id);
   if (!player) {
@@ -715,7 +735,7 @@ function renderAdminLogin() {
 }
 
 function renderAdmin() {
-  if (!state.user) return renderPlayerLogin();
+  if (!state.user) return renderAdminLogin();
 
   if (!state.isAdmin) {
     return `

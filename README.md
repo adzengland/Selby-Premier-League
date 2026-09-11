@@ -103,3 +103,17 @@ Player cards now open dedicated public profile pages showing:
 - five most recent completed results
 
 Players can still edit only their own profile through Player Login. Admin authentication remains separate under Admin.
+
+
+## Full public player profile display
+
+Public player pages now show all profile information currently captured by the editor:
+- avatar / profile image
+- real name
+- nickname
+- bio
+- walk-on song
+- current season statistics
+- recent match history
+
+Only the authenticated owner of the profile can edit their profile. Everyone can view the public profile.

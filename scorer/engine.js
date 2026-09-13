@@ -1,0 +1,17 @@
+/* Shared deterministic rules. No network or storage. */
+(function(root){
+'use strict';
+const copy=x=>JSON.parse(JSON.stringify(x));
+const requireOK=(ok,msg)=>{if(!ok)throw Error(msg)};
+function dart(d){requireOK(d&&Number.isInteger(d.n)&&Number.isInteger(d.m)&&typeof d.attempt==='boolean','Invalid dart');requireOK((d.n===0&&d.m===1)||(d.n===25&&[1,2].includes(d.m))||(d.n>=1&&d.n<=20&&d.m>=1&&d.m<=3),'Invalid segment');return {...d,points:d.n*d.m,label:d.n===0?'MISS':d.n===25?(d.m===2?'BULL':'25'):(d.m===1?'S':d.m===2?'D':'T')+d.n};}
+function initial(c){requireOK(Array.isArray(c.players)&&c.players.length===2&&c.players.every(p=>typeof p==='string'&&p.length>0)&&c.players[0]!==c.players[1],'Two different players required');requireOK([0,1].includes(c.first),'Choose the bull winner');requireOK(c.firstTo===5,'League matches are first to five');return {remaining:[501,501],legs:[0,0],leg:1,turn:c.first,status:'active',visits:[],metrics:[{darts:0,points:0,attempts:0,checkouts:0},{darts:0,points:0,attempts:0,checkouts:0}],override:null};}
+function visit(s,ds,c,partial=false){requireOK(s.status==='active','Match already complete');requireOK(Array.isArray(ds)&&ds.length>=1&&ds.length<=3,'Enter one to three darts');s=copy(s);const who=s.turn,start=s.remaining[who];let left=start,bust=false,win=false,attempts=0;const darts=[];
+for(const input of ds){requireOK(!bust&&!win,'No darts may follow a bust or checkout');const d=dart(input),eligible=left===50||(left>=2&&left<=40&&left%2===0);requireOK(!d.attempt||eligible,'A checkout attempt must be at a finishing double');const next=left-d.points;win=next===0&&d.m===2;bust=next<0||next===1||(next===0&&!win);if(win)requireOK(d.attempt,'Mark the finishing dart as a checkout attempt');if(d.attempt)attempts++;darts.push({...d,before:left,after:bust?start:next});left=bust?start:next;}
+requireOK(partial||ds.length===3||bust||win,'Enter all three darts, unless the visit busts or checks out');const points=bust?0:start-left;s.remaining[who]=left;s.metrics[who].darts+=ds.length;s.metrics[who].points+=points;s.metrics[who].attempts+=attempts;s.metrics[who].checkouts+=win?1:0;s.visits.push({player:who,leg:s.leg,start,remaining:left,points,bust,checkout:win,darts});
+if(win){s.legs[who]++;if(s.legs[who]===c.firstTo)s.status='completed';else{s.leg++;s.remaining=[501,501];s.turn=(c.first+s.leg-1)%2;}}else if(!partial||bust)s.turn=1-who;return s;}
+function replay(config,events){let s=initial(config);for(const e of events){requireOK(e.type==='visit','Submitted visits cannot be changed');s=visit(s,e.darts,config);}return s;}
+const doubles=Array.from({length:20},(_,i)=>({n:20-i,m:2})).concat({n:25,m:2});
+const choices=[...Array.from({length:20},(_,i)=>({n:20-i,m:3})),...Array.from({length:20},(_,i)=>({n:20-i,m:1})),{n:25,m:1},...doubles];
+function checkout(left,count=3){if(!Number.isInteger(left)||left<2||left>170||count<1)return null;for(let length=1;length<=count;length++){function search(rem,path){const pool=path.length===length-1?doubles:choices;for(const d of pool){const n=rem-d.n*d.m;if(path.length===length-1){if(n===0)return [...path,d];}else if(n>=2){const found=search(n,[...path,d]);if(found)return found;}}return null;}const route=search(left,[]);if(route)return route.map(d=>dart({...d,attempt:false}).label);}return null;}
+const api={dart,initial,visit,replay,checkout};if(typeof module!=='undefined')module.exports=api;root.SPLScoring=api;
+})(typeof window==='undefined'?globalThis:window);

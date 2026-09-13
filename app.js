@@ -89,7 +89,8 @@ function normalizeFixture(row) {
     s1: row.player1_legs,
     s2: row.player2_legs,
     a1: row.player1_average,
-    a2: row.player2_average
+    a2: row.player2_average,
+    status: row.scorer_status || null, pts1: row.player1_points, pts2: row.player2_points, darts1: row.player1_darts, darts2: row.player2_darts
   };
 }
 
@@ -149,6 +150,7 @@ async function loadData() {
     fixtures: fixturesByRound[r.round_number] || []
   }));
 
+  window.SPL_FIXTURE_PREVIEW?.apply(state.rounds);
   state.fixturesLocked = !!settingsData?.fixtures_locked;
   state.players = playersData || [];
   state.loading = false;
@@ -165,57 +167,25 @@ async function loadData() {
 }
 
 function getStandings() {
-  const rows = Object.fromEntries(PLAYERS.map(name => [name, {
-    player: name,
-    p: 0, w: 0, l: 0,
-    lf: 0, la: 0, ld: 0,
-    avgTotal: 0, avgCount: 0, avg: null
-  }]));
-
-  state.rounds.forEach(round => round.fixtures.forEach(f => {
-    const a = rows[f.p1];
-    const b = rows[f.p2];
-    if (!a || !b) return;
-
-    if (f.a1 !== null && f.a1 !== "" && Number.isFinite(Number(f.a1))) {
-      a.avgTotal += Number(f.a1);
-      a.avgCount++;
-    }
-    if (f.a2 !== null && f.a2 !== "" && Number.isFinite(Number(f.a2))) {
-      b.avgTotal += Number(f.a2);
-      b.avgCount++;
-    }
-
-    const s1 = Number(f.s1), s2 = Number(f.s2);
-    if (!Number.isFinite(s1) || !Number.isFinite(s2) || f.s1 === null || f.s2 === null) return;
-
-    a.p++; b.p++;
-    a.lf += s1; a.la += s2;
-    b.lf += s2; b.la += s1;
-
-    if (s1 > s2) {
-      a.w++; b.l++;
-    } else {
-      b.w++; a.l++;
-    }
+  const names=[...new Set([...PLAYERS,...state.players.map(p=>p.name)])];
+  const rows=Object.fromEntries(names.map(player=>[player,{player,p:0,w:0,l:0,lf:0,la:0,ld:0,points:0,darts:0,avg:null}]));
+  state.rounds.forEach(r=>r.fixtures.forEach(f=>{
+    if(f.status!=='completed'||f.s1===null||f.s2===null)return;
+    const a=rows[f.p1],b=rows[f.p2];if(!a||!b)return;
+    const s1=Number(f.s1),s2=Number(f.s2);a.p++;b.p++;a.lf+=s1;a.la+=s2;b.lf+=s2;b.la+=s1;
+    if(s1>s2){a.w++;b.l++;}else{b.w++;a.l++;}
+    a.points+=Number(f.pts1)||0;a.darts+=Number(f.darts1)||0;b.points+=Number(f.pts2)||0;b.darts+=Number(f.darts2)||0;
   }));
-
-  Object.values(rows).forEach(r => {
-    r.ld = r.lf - r.la;
-    r.avg = r.avgCount ? r.avgTotal / r.avgCount : null;
-  });
-
-  return Object.values(rows).sort((a, b) =>
-    b.ld - a.ld ||
-    b.lf - a.lf ||
-    a.player.localeCompare(b.player)
-  );
+  Object.values(rows).forEach(r=>{r.ld=r.lf-r.la;r.avg=r.darts?r.points*3/r.darts:null;});
+  const ranked=Object.values(rows).sort((a,b)=>b.lf-a.lf||b.ld-a.ld||a.player.localeCompare(b.player));
+  ranked.forEach((r,i)=>{r.rank=i&&r.lf===ranked[i-1].lf&&r.ld===ranked[i-1].ld?ranked[i-1].rank:i+1;});
+  return ranked;
 }
 
 function completedMatches() {
   return state.rounds
     .flatMap(r => r.fixtures)
-    .filter(f => f.s1 !== null && f.s2 !== null).length;
+    .filter(f => f.status === 'completed').length;
 }
 
 function renderTable() {
@@ -233,7 +203,7 @@ function renderTable() {
         <tbody>
           ${table.map((r, i) => `
             <tr>
-              <td><span class="pos">${i + 1}</span><strong>${r.player}</strong></td>
+              <td><span class="pos">${r.rank}</span><strong>${r.player}</strong></td>
               <td>${r.p}</td>
               <td>${r.w}</td>
               <td>${r.l}</td>
@@ -249,42 +219,10 @@ function renderTable() {
 }
 
 function fixturesMarkup(rounds = state.rounds) {
-  return rounds.map(round => `
-    <article class="card round-card">
-      <div class="round-top">
-        <div>
-          <span class="kicker">Round ${round.number}</span>
-          <h3>${round.date ? formatDate(round.date) : "Date TBD"}</h3>
-        </div>
-        <div class="round-meta">
-          <strong>Host</strong><br>${round.host || "TBD"}
-        </div>
-      </div>
-
-      ${round.fixtures.length
-        ? round.fixtures.map(f => {
-            const done = f.s1 !== null && f.s2 !== null;
-            return `
-              <div class="fixture">
-                <div class="left">
-                  ${f.p1}
-                  ${f.a1 !== null && f.a1 !== "" ? `<div class="small">Avg ${Number(f.a1).toFixed(2)}</div>` : ""}
-                </div>
-                <div class="score ${done ? "" : "pending"}">
-                  ${done ? `${f.s1}–${f.s2}` : "vs"}
-                </div>
-                <div class="right">
-                  ${f.p2}
-                  ${f.a2 !== null && f.a2 !== "" ? `<div class="small">Avg ${Number(f.a2).toFixed(2)}</div>` : ""}
-                </div>
-              </div>`;
-          }).join("")
-        : `<div class="muted">Fixtures not generated yet.</div>`
-      }
-    </article>
-  `).join("");
+ const escape=window.SPLFixture?.escape||((x)=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+ return rounds.map(round=>`<article class="card round-card"><div class="round-top"><div><span class="kicker">Round ${round.number}</span><h3>${round.date?formatDate(round.date):'Date TBD'}</h3></div><div class="round-meta"><strong>Host</strong><br>${escape(round.host||'TBD')}</div></div>
+ ${round.fixtures.map(f=>`<div class="fixture scorer-fixture-row"><div class="left">${escape(f.p1)}${f.a1!=null?`<div class="small">Avg ${Number(f.a1).toFixed(2)}</div>`:''}</div><div class="score ${f.status==='completed'?'':'pending'}">${f.status==='completed'?`${f.s1}–${f.s2}`:'vs'}</div><div class="right">${escape(f.p2)}${f.a2!=null?`<div class="small">Avg ${Number(f.a2).toFixed(2)}</div>`:''}</div><div class="fixture-action">${state.isAdmin?`<a class="btn secondary fixture-score-link" href="#score/${encodeURIComponent(f.id)}">${f.status==='completed'?'View scorecard':f.status==='active'?'Continue scoring':'Score match'}</a>`:''}</div></div>`).join('')||'<p>Fixtures not generated yet.</p>'}</article>`).join('');
 }
-
 
 function initials(name) {
   return name.split(/\s+/).map(x => x[0]).join("").slice(0, 2).toUpperCase();
@@ -651,7 +589,7 @@ function renderHome() {
     <section class="section">
       <div class="section-head">
         <div><span class="kicker">Standings</span><h2>League table</h2></div>
-        <div class="small">Ranked by leg difference</div>
+        <div class="small">Ranked by legs for, then leg difference</div>
       </div>
       ${renderTable()}
     </section>`;
@@ -670,7 +608,7 @@ function renderTablePage() {
   return `
     <section class="section-head">
       <div><span class="kicker">Standings</span><h2>League Table</h2></div>
-      <div class="small">Overall winner = highest leg difference. Exact tie? Playoff.</div>
+      <div class="small">Most legs for wins; leg difference breaks ties. Equal on both = shared position.</div>
     </section>
     ${renderTable()}
     <section class="section grid three">
@@ -800,38 +738,7 @@ function renderAdmin() {
             </div>
           </div>
 
-          <div class="section">
-            ${round.fixtures.length
-              ? round.fixtures.map((f, idx) => `
-                <div class="admin-fixture admin-fixture-with-avg">
-                  <div class="p1">${f.p1}</div>
-
-                  <div class="score-entry">
-                    <input type="number" min="0" max="5" inputmode="numeric"
-                      data-score="${round.number}|${idx}|s1"
-                      value="${f.s1 ?? ""}" placeholder="Legs">
-                    <input type="number" min="0" max="180" step="0.01" inputmode="decimal"
-                      data-avg="${round.number}|${idx}|a1"
-                      value="${f.a1 ?? ""}" placeholder="Avg">
-                  </div>
-
-                  <span>–</span>
-
-                  <div class="score-entry">
-                    <input type="number" min="0" max="5" inputmode="numeric"
-                      data-score="${round.number}|${idx}|s2"
-                      value="${f.s2 ?? ""}" placeholder="Legs">
-                    <input type="number" min="0" max="180" step="0.01" inputmode="decimal"
-                      data-avg="${round.number}|${idx}|a2"
-                      value="${f.a2 ?? ""}" placeholder="Avg">
-                  </div>
-
-                  <div>${f.p2}</div>
-                </div>
-              `).join("")
-              : `<div class="muted">Generate the season fixtures to start entering results.</div>`
-            }
-          </div>
+          <div class="section">${fixturesMarkup([round])}</div>
         </article>
       `).join("")}
     </div>`;
@@ -913,7 +820,7 @@ async function signOut() {
 }
 
 async function regenerateFixtures() {
-  if (state.fixturesLocked || !state.isAdmin) return;
+  if (state.fixturesLocked || !state.isAdmin || state.rounds.some(r=>r.fixtures.some(f=>f.status))) return;
 
   const anyResults = state.rounds.some(r =>
     r.fixtures.some(f =>
@@ -979,33 +886,6 @@ async function updateRound(number, patch) {
   }
 }
 
-async function updateFixture(roundNumber, index, patch) {
-  if (!state.isAdmin) return;
-
-  const fixture = state.rounds[roundNumber - 1]?.fixtures[index];
-  if (!fixture?.id) return;
-
-  const { error } = await sb
-    .from("fixtures")
-    .update(patch)
-    .eq("id", fixture.id);
-
-  if (error) {
-    alert(error.message);
-  }
-}
-
-function validateCompletedScore(fixture, changedKey, changedValue) {
-  const next = { ...fixture, [changedKey]: changedValue };
-
-  if (next.s1 === null || next.s2 === null) return true;
-
-  return (
-    (Number(next.s1) === 5 && Number(next.s2) >= 0 && Number(next.s2) <= 4) ||
-    (Number(next.s2) === 5 && Number(next.s1) >= 0 && Number(next.s1) <= 4)
-  );
-}
-
 function bindAdmin() {
   document.querySelector("#loginBtn")?.addEventListener("click", signInPlayer);
   document.querySelector("#loginPassword")?.addEventListener("keydown", e => {
@@ -1042,55 +922,6 @@ function bindAdmin() {
     });
   });
 
-  document.querySelectorAll("[data-score]").forEach(el => {
-    el.addEventListener("change", async e => {
-      const [r, idx, key] = e.target.dataset.score.split("|");
-      const roundNumber = Number(r);
-      const index = Number(idx);
-      const fixture = state.rounds[roundNumber - 1].fixtures[index];
-      const raw = e.target.value.trim();
-      const val = raw === "" ? null : Number(raw);
-
-      if (val !== null && (!Number.isInteger(val) || val < 0 || val > 5)) {
-        alert("Legs must be a whole number from 0 to 5.");
-        e.target.value = fixture[key] ?? "";
-        return;
-      }
-
-      if (!validateCompletedScore(fixture, key, val)) {
-        alert("A completed match must finish 5–0 through 5–4.");
-        e.target.value = fixture[key] ?? "";
-        return;
-      }
-
-      fixture[key] = val;
-      const dbKey = key === "s1" ? "player1_legs" : "player2_legs";
-      await updateFixture(roundNumber, index, { [dbKey]: val });
-      route();
-    });
-  });
-
-  document.querySelectorAll("[data-avg]").forEach(el => {
-    el.addEventListener("change", async e => {
-      const [r, idx, key] = e.target.dataset.avg.split("|");
-      const roundNumber = Number(r);
-      const index = Number(idx);
-      const fixture = state.rounds[roundNumber - 1].fixtures[index];
-      const raw = e.target.value.trim();
-      const val = raw === "" ? null : Number(raw);
-
-      if (val !== null && (!Number.isFinite(val) || val < 0 || val > 180)) {
-        alert("Enter a darts average between 0 and 180.");
-        e.target.value = fixture[key] ?? "";
-        return;
-      }
-
-      fixture[key] = val;
-      const dbKey = key === "a1" ? "player1_average" : "player2_average";
-      await updateFixture(roundNumber, index, { [dbKey]: val });
-      route();
-    });
-  });
 }
 
 function loadingMarkup() {
@@ -1122,6 +953,9 @@ function updateSiteAccount(){
 function route() {
   updateSiteAccount();
   const routeName = (location.hash || "#home").slice(1);
+  if (routeName.startsWith("score/") && window.SPLFixture) {window.SPLFixture.open(decodeURIComponent(routeName.slice(6))); return;}
+  window.SPLFixture?.close();
+  document.body.classList.remove("fixture-scoring");
 
   document.querySelectorAll(".nav a").forEach(a => {
     a.classList.toggle("active", a.dataset.route === routeName);

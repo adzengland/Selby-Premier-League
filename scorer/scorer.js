@@ -41,4 +41,15 @@ bindRecovery();if(busy||pending())root().querySelectorAll('[data-mode],[data-n],
 }
 window.SPLFixture={escape:esc,canScore:allowed,close(){if(id!==null){ticket++;id=null;match=null;draft=[];}document.body.classList.remove('fixture-scoring');},async open(fixtureId){const nextOwner=state.user?.id;if(nextOwner!==owner){owner=nextOwner;id=null;match=null;draft=[];}if(state.loading){render();return;}if(!allowed()){id=null;render();return;}if(id!==fixtureId){id=fixtureId;await refresh();}else render();}};
 if(location.hash.startsWith('#score/'))route();
+
+// Whole-match deletion is separate from editing individual submitted visits.
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-delete-fixture]');if(!button||!allowed())return;
+ const fixtureId=button.dataset.deleteFixture,dialog=document.createElement('dialog');dialog.className='fixture-delete-dialog';
+ dialog.innerHTML='<h2>Delete match scores?</h2><p class="delete-description">Loading the saved match…</p><p>This permanently removes all recorded darts, visits and legs for this match and recalculates the league table. The scheduled fixture stays available to play again.</p><p class="delete-error" role="status"></p><div class="delete-actions"><button class="btn secondary" data-cancel>Cancel</button><button class="btn danger" data-confirm disabled>Delete scores</button></div>';
+ document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();dialog.showModal();
+ let snapshot;const requestId=crypto.randomUUID(),confirm=dialog.querySelector('[data-confirm]');
+ try{snapshot=await window.SPLFixtureAPI.load(fixtureId);if(!snapshot)throw Error('No saved scores remain for this fixture. Refresh Fixtures.');dialog.querySelector('.delete-description').textContent=snapshot.config.players.join(' vs ')+' · '+snapshot.state.legs.join('–');confirm.disabled=false;}catch(e){dialog.querySelector('.delete-error').textContent=e.message;}
+ confirm.onclick=async()=>{confirm.disabled=true;try{await window.SPLFixtureAPI.deleteMatch(fixtureId,snapshot,requestId);dialog.close();window.SPLFixture.close();await loadData();}catch(e){dialog.querySelector('.delete-error').textContent=e.message+' If the connection failed, retry this deletion or refresh Fixtures to check the result.';confirm.disabled=false;}};
+});
 })();

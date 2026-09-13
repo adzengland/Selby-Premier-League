@@ -1129,14 +1129,16 @@ function route() {
 
   const app = document.querySelector("#app");
   const hideSprint=window.SPL_CONFIG?.SPRINT_HIDE_SIGNED_OUT!==false;
-  document.querySelectorAll('[data-route="sprint"]').forEach(a=>{a.style.display=hideSprint&&!state.user?'none':'';});
+  document.querySelectorAll('[data-route="sprint"],[data-route="clock"]').forEach(a=>{a.style.display=hideSprint&&!state.user?'none':'';});
 
   // Preserve the mounted game through auth refresh and league-data reloads.
-  if (routeName === "sprint") {
-    if(hideSprint&&!state.user){document.body.classList.remove('sprint-mobile-playing');app.innerHTML='<section class="hero"><h1>501 Sprint</h1><p>Sign in with your player account to play.</p><a class="btn" href="#profile">Player Login</a></section>';return;}
+  if (routeName === "sprint" || routeName === "clock") {
+    if(hideSprint&&!state.user){document.body.classList.remove('sprint-mobile-playing');app.innerHTML='<section class="hero"><h1>Player games</h1><p>Sign in with your player account to play.</p><a class="btn" href="#profile">Player Login</a></section>';return;}
+    if (document.getElementById("spl-sprint-frame") && document.getElementById("spl-sprint-frame").dataset.game !== routeName) app.replaceChildren();
     if (!document.getElementById("spl-sprint-frame")) {
-      app.innerHTML = '<iframe id="spl-sprint-frame" title="501 Sprint game and leaderboard" src="./sprint/?embedded=1&v=20260913-account12" style="display:block;width:100%;height:1100px;border:0;background:transparent" scrolling="no"></iframe>';
+      app.innerHTML = '<iframe id="spl-sprint-frame" title="SPL game and leaderboard" src="./' + (routeName==='clock'?'clock':'sprint') + '/?embedded=1&v=clock-release1" style="display:block;width:100%;height:1100px;border:0;background:transparent" scrolling="no"></iframe>';
     }
+    document.getElementById('spl-sprint-frame').dataset.game=routeName;
     return;
   }
 
@@ -1201,6 +1203,6 @@ window.addEventListener("message", event => {
   if(e.data?.type==='spl-mobile-play'){document.body.classList.toggle('sprint-mobile-playing',!!e.data.active);requestAnimationFrame(()=>{send();if(e.data.active&&matchMedia('(max-width:650px)').matches){const y=f.getBoundingClientRect().top+scrollY-document.querySelector('.site-header').getBoundingClientRect().height-8;window.scrollTo({top:y,behavior:'instant'});}});}
  });
  addEventListener('resize',send);window.visualViewport?.addEventListener('resize',send);
- addEventListener('hashchange',()=>{if(location.hash!=='#sprint')document.body.classList.remove('sprint-mobile-playing');});
+ addEventListener('hashchange',()=>{if(!['#sprint','#clock'].includes(location.hash))document.body.classList.remove('sprint-mobile-playing');});
 })();
 

@@ -1,4 +1,4 @@
--- Read-only checks. Run as postgres before 001-sprint.sql.
+-- Read-only checks. Run as postgres before 001-around-the-clock.sql.
 -- Confirm every real player has exactly one linked Auth user.
 select p.name, p.user_id,
        case when p.user_id is null then 'NOT LINKED'
@@ -8,7 +8,7 @@ from public.players p
 left join auth.users u on u.id = p.user_id
 order by p.name;
 
--- This should return zero rows. Sprint rejects ambiguous account mappings.
+-- This should return zero rows. Around the Clock rejects ambiguous account mappings.
 select user_id, count(*) as player_rows
 from public.players
 where user_id is not null

@@ -1,11 +1,11 @@
-# Release verification — 2026-09-13
+# Around the Clock production release checks
 
-This package is for the first live installation. No live deployment or live database mutation has been performed.
-
-- Current SQL installation and latest timer migration were exercised in local PGlite/PostgreSQL: 800 power/scoring samples, low-power misses, three-dart visit completion, idempotent retries, rapid-fire rejection, and checkout duration measured from first accepted throw rather than Start Game.
-- Current account header checked at 390px and 1280px: account route, player identity, signed-out sign-in form, removed homepage duplicate and layout bounds.
-- During this testing iteration, browser checks covered impact anchoring, dart flight and bounce-out, forced animation with reduced-motion preference, audio/mute, reset/replay, first-dart timer, automatic collection, BUST/180/confetti, result GIF, signed-out game hiding and leaderboard navigation. Relevant screenshots were visually inspected.
-- Production uses the real shared Supabase client and server RPCs. Practice adapters are excluded. Existing root styles.css, config.js and assets remain dependencies supplied by your current site.
-- Final archive entries and local HTML/CSS asset references were verified. Incremental SQL upgrades 003–006 are intentionally excluded; use 000, 001, 002 only.
-
-Live sign-in, actual account/avatar data, score persistence on the production project and physical-phone HTTPS behaviour still need the post-install checks in DEPLOYMENT.md.
+- New SQL applied twice in local PGlite/PostgreSQL without depending on 501 SQL.
+- Anonymous start denied; unlinked player denied; authenticated direct private-table access denied; cross-player throws denied; malformed input denied.
+- 100 actual scoring-coordinate comparisons match the measured original dartboard scorer.
+- 60 labelled number/multiplier fixtures and six bull-stage fixtures test single/double/treble progress, ceiling at outer bull, wrong bulls, bouncer, and final inner-bull completion. These fixtures substitute only the impact label; production score_at is restored afterward.
+- Real low-power misses tested: no advance, darts consumed, three-dart collection and duplicate collection/retry behaviour.
+- First accepted dart timing, charge/rate guard and saved completion time checked.
+- Time-only best-per-player ranking verified with a faster 40-dart run beating a slower 9-dart run; equal times with different darts share rank.
+- Production files exercised through the real Supabase browser client with mocked network responses: signed-out gate, clock RPC calls, target, time, finish/rank, leaderboard link and replay. No local adapters loaded or browser errors.
+- Earlier local prototype tests cover a complete game and four phone viewports. Production live deployment/database were not modified.

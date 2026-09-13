@@ -17,6 +17,8 @@ const config = window.SPL_CONFIG || {};
 const hasSupabase = !!(config.SUPABASE_URL && config.SUPABASE_ANON_KEY);
 const sb = hasSupabase ? window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY) : null;
 
+window.SPL_SPRINT_CLIENT = sb;
+
 let state = {
   fixturesLocked: false,
   rounds: [],
@@ -105,6 +107,7 @@ async function loadData() {
 
   const { data: sessionData } = await sb.auth.getSession();
   state.user = sessionData?.session?.user || null;
+  route();
 
   if (state.user) {
     const { data: adminFlag } = await sb.rpc("is_spl_admin");
@@ -1107,7 +1110,17 @@ function errorMarkup() {
     <div class="notice error">${state.error}</div>`;
 }
 
+function updateSiteAccount(){
+ const link=document.getElementById('siteAccount');if(!link)return;
+ const player=state.players.find(p=>p.user_id===state.user?.id);
+ const name=state.user?(player?.name||'My account'):'Sign in';
+ link.querySelector('.site-account-name').textContent=name;
+ link.setAttribute('aria-label',state.user?`Account: ${name}`:'Sign in to your account');link.title=state.user?name+' · My account':'Sign in';
+ const avatar=link.querySelector('.site-account-avatar');avatar.replaceChildren();avatar.textContent=state.user?name.split(/\s+/).map(x=>x[0]).slice(0,2).join(''):'↪';
+ if(state.user&&player?.avatar_url){try{const url=new URL(player.avatar_url,location.href);if(['https:','http:'].includes(url.protocol)){const img=new Image();img.alt='';img.src=url.href;img.referrerPolicy='no-referrer';img.onerror=()=>{avatar.textContent=name.split(/\s+/).map(x=>x[0]).slice(0,2).join('');};avatar.replaceChildren(img);}}catch{}}
+}
 function route() {
+  updateSiteAccount();
   const routeName = (location.hash || "#home").slice(1);
 
   document.querySelectorAll(".nav a").forEach(a => {
@@ -1115,6 +1128,18 @@ function route() {
   });
 
   const app = document.querySelector("#app");
+  const hideSprint=window.SPL_CONFIG?.SPRINT_HIDE_SIGNED_OUT!==false;
+  document.querySelectorAll('[data-route="sprint"]').forEach(a=>{a.style.display=hideSprint&&!state.user?'none':'';});
+
+  // Preserve the mounted game through auth refresh and league-data reloads.
+  if (routeName === "sprint") {
+    if(hideSprint&&!state.user){document.body.classList.remove('sprint-mobile-playing');app.innerHTML='<section class="hero"><h1>501 Sprint</h1><p>Sign in with your player account to play.</p><a class="btn" href="#profile">Player Login</a></section>';return;}
+    if (!document.getElementById("spl-sprint-frame")) {
+      app.innerHTML = '<iframe id="spl-sprint-frame" title="501 Sprint game and leaderboard" src="./sprint/?embedded=1&v=20260913-account12" style="display:block;width:100%;height:1100px;border:0;background:transparent" scrolling="no"></iframe>';
+    }
+    return;
+  }
+
 
   if (state.loading) {
     app.innerHTML = loadingMarkup();
@@ -1135,7 +1160,7 @@ function route() {
   } else if (routeName.startsWith("player/")) {
     const playerName = decodeURIComponent(routeName.slice("player/".length));
     app.innerHTML = renderPlayerProfile(playerName);
-  } else if (routeName === "profile") {
+  } else if ((routeName === "profile" || routeName === "account")) {
     app.innerHTML = renderProfileEditor();
     bindAdmin();
   } else if (routeName === "admin") {
@@ -1149,9 +1174,33 @@ function route() {
 window.addEventListener("hashchange", route);
 
 if (sb) {
-  sb.auth.onAuthStateChange(async () => {
-    await loadData();
+  sb.auth.onAuthStateChange((_event,session) => {
+    state.user=session?.user||null;route();
+    setTimeout(() => loadData(), 0);
   });
 }
 
 loadData();
+
+
+// Only accept sizing messages from this page's own same-origin game frame.
+window.addEventListener("message", event => {
+  const frame = document.getElementById("spl-sprint-frame");
+  if (!frame || event.origin !== location.origin || event.source !== frame.contentWindow) return;
+  if (event.data?.type !== "spl-sprint-height") return;
+  const height = Number(event.data.height);
+  if (Number.isFinite(height) && height >= 100 && height <= 20000) frame.style.height = Math.ceil(height) + "px";
+});
+
+// SPL mobile viewport and play focus. Only the embedded same-origin game can trigger it.
+(()=>{
+ const style=document.createElement('style');style.textContent='@media(max-width:650px){body.sprint-mobile-playing .site-header{min-height:44px;height:44px;padding:0;gap:0}body.sprint-mobile-playing .site-header .brand{display:none}body.sprint-mobile-playing .nav{display:flex;flex-wrap:nowrap;width:100%;overflow:auto;gap:0}body.sprint-mobile-playing .nav a{padding:10px 8px;font-size:12px;white-space:nowrap}body.sprint-mobile-playing .content{padding-top:8px}}';document.head.append(style);
+ const send=()=>{const f=document.getElementById('spl-sprint-frame');if(!f)return;const h=window.visualViewport?.height||innerHeight;const header=document.querySelector('.site-header').getBoundingClientRect().height;f.contentWindow.postMessage({type:'spl-play-viewport',height:Math.max(240,h-header-18)},location.origin);};
+ addEventListener('message',e=>{const f=document.getElementById('spl-sprint-frame');if(!f||e.source!==f.contentWindow||e.origin!==location.origin)return;
+  if(e.data?.type==='spl-mobile-ready')send();
+  if(e.data?.type==='spl-mobile-play'){document.body.classList.toggle('sprint-mobile-playing',!!e.data.active);requestAnimationFrame(()=>{send();if(e.data.active&&matchMedia('(max-width:650px)').matches){const y=f.getBoundingClientRect().top+scrollY-document.querySelector('.site-header').getBoundingClientRect().height-8;window.scrollTo({top:y,behavior:'instant'});}});}
+ });
+ addEventListener('resize',send);window.visualViewport?.addEventListener('resize',send);
+ addEventListener('hashchange',()=>{if(location.hash!=='#sprint')document.body.classList.remove('sprint-mobile-playing');});
+})();
+

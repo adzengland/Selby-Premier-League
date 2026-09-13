@@ -1,0 +1,4 @@
+Cabinet inscription asset: sprint/assets/cabinet-established-2025.png
+Method: built-in image_gen edit.
+Prompt: Change ONLY the curved bottom wooden rim inscription PLAY AVERAGE. PLAY LEGENDARY. to exactly ESTABLISHED 2025 in matching cream/gold engraved capitals, centred on the same arc. Preserve all other artwork, framing, board geometry, numbers, wires, scoring rings and top title. No darts.
+Only the lower non-scoring rim of the generated image is shown through a CSS clip; the original board image remains underneath.

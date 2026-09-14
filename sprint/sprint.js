@@ -7,7 +7,7 @@
  const client=sharedClient||(window.supabase&&config.SUPABASE_URL&&config.SUPABASE_ANON_KEY
   ?window.supabase.createClient(config.SUPABASE_URL,config.SUPABASE_ANON_KEY):null);
  const canvas=$('play'),ctx=canvas.getContext('2d'),dart=$('dartAsset');
- const keys=new Set(),pointers=new Map();
+ const keys=new Set(),pointers=new Map(),aimControls=window.SPL_AIM_CONTROLS.create();
  let collectTimer=null;
  let user=null,player=null,game=null,hits=[],shots=[],busy=false,pending=null,epoch=0;
  let authUserId=null,authCheck=0,chargeStart=0,charging=false,chargeSource=null,throwPointer=null;
@@ -17,7 +17,7 @@
  const elapsed=()=>!game||(!game.total_darts&&pending?.kind!=='throw')?0:game.status==='completed'?game.elapsed_ms:clockBase+performance.now()-clockStamp;
  const hitLabel=h=>h?.label==='BOUNCER'?'❌':h?.label||'—';
  function notice(text){$('status').textContent=text;}
- function cancel(){charging=false;chargeSource=null;throwPointer=null;power=0;keys.clear();pointers.clear();document.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));}
+ function cancel(){charging=false;chargeSource=null;throwPointer=null;power=0;keys.clear();pointers.clear();aimControls.clear();document.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));}
  function canThrow(){return !!(player&&game&&game.status==='active'&&!game.pending_collect&&!busy&&!pending);}
  function stopAutoCollect(){clearTimeout(collectTimer);collectTimer=null;}
  function autoCollect(){
@@ -148,7 +148,7 @@
   power=gaugePower(performance.now()-chargeStart);charging=false;chargeSource=null;
   if(!canThrow())return;
   if(!game.total_darts){clockBase=0;clockStamp=performance.now();}
-  pending={kind:'throw',name:'sprint_throw',power,args:{p_game_id:game.id,p_request_id:crypto.randomUUID(),p_aim_x:aim.x+wobble.x,p_aim_y:aim.y+wobble.y,p_power:power}};runPending();
+  pending={kind:'throw',name:'sprint_throw',power,args:{p_game_id:game.id,p_request_id:crypto.randomUUID(),p_aim_x:aim.x+wobble.x,p_aim_y:aim.y+wobble.y,p_power:power,p_dart_no:game.total_darts}};runPending();
  }
  function drawDart(s,now){
   if(!dart.complete||!dart.naturalWidth)return;
@@ -190,11 +190,9 @@
  function frame(now){
   const dt=Math.min(.04,(now-last)/1000||0);last=now;
   if(canThrow()){
-   let dx=0,dy=0;const d=new Set([...keys,...pointers.values()]);
-   if(d.has('left'))dx--;if(d.has('right'))dx++;if(d.has('up'))dy--;if(d.has('down'))dy++;
-   const norm=Math.hypot(dx,dy)||1;
-   aim.x=Math.max(621-397*1.12,Math.min(621+397*1.12,aim.x+dx/norm*dt*397*.54));
-   aim.y=Math.max(607-411*1.12,Math.min(607+411*1.12,aim.y+dy/norm*dt*411*.54));
+   const move=aimControls.vector(now);
+   aim.x=Math.max(621-397*1.12,Math.min(621+397*1.12,aim.x+move.x*dt*397*.54));
+   aim.y=Math.max(607-411*1.12,Math.min(607+411*1.12,aim.y+move.y*dt*411*.54));
   }
   wobble.x=Math.sin(now*.0031)*11+Math.sin(now*.0093)*7;wobble.y=Math.cos(now*.0037)*12+Math.sin(now*.0107)*8;
   ctx.clearRect(0,0,1254,1254);
@@ -223,17 +221,22 @@
    $('leaderboardStatus').textContent=rows.length?'One best completed leg per player. Fewest darts wins; time breaks ties.':'No completed legs yet. Set the first score.';
   }catch(error){if(version===boardLoad){$('leaderboardStatus').textContent='Unable to load scores. '+friendly(error);if(game?.status==='completed')$('finishRank').textContent='Standings unavailable — refresh the leaderboard to retry.';}}
  }
+ function nudge(dir){
+  const dx=dir==='left'?-1:dir==='right'?1:0,dy=dir==='up'?-1:dir==='down'?1:0;
+  aim.x=Math.max(621-397*1.12,Math.min(621+397*1.12,aim.x+dx*2));
+  aim.y=Math.max(607-411*1.12,Math.min(607+411*1.12,aim.y+dy*2));
+ }
  const keyMap={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
  addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea,select,a'))return;
-  if(keyMap[e.code]&&canThrow()){e.preventDefault();keys.add(keyMap[e.code]);}
+  if(keyMap[e.code]&&canThrow()){e.preventDefault();if(aimControls.press('key:'+e.code,keyMap[e.code],performance.now()))nudge(keyMap[e.code]);keys.add(keyMap[e.code]);}
   if(e.code==='Space'&&canThrow()){e.preventDefault();if(!e.repeat)begin('keyboard');}
   if(e.code==='Enter'&&collectTimer===null&&game?.pending_collect&&!e.repeat&&e.target===document.body){e.preventDefault();collect();}
  });
- addEventListener('keyup',e=>{if(keyMap[e.code])keys.delete(keyMap[e.code]);if(e.code==='Space'&&charging){e.preventDefault();release('keyboard');}});
+ addEventListener('keyup',e=>{if(keyMap[e.code]){keys.delete(keyMap[e.code]);aimControls.release('key:'+e.code);}if(e.code==='Space'&&charging){e.preventDefault();release('keyboard');}});
  document.querySelectorAll('[data-dir]').forEach(b=>{
-  b.addEventListener('pointerdown',e=>{if(!canThrow())return;e.preventDefault();b.setPointerCapture(e.pointerId);pointers.set(e.pointerId,b.dataset.dir);b.classList.add('held');});
-  const clear=e=>{pointers.delete(e.pointerId);b.classList.remove('held');};['pointerup','pointercancel','lostpointercapture'].forEach(t=>b.addEventListener(t,clear));
+  b.addEventListener('pointerdown',e=>{if(!canThrow())return;e.preventDefault();b.setPointerCapture(e.pointerId);if(aimControls.press('pointer:'+e.pointerId,b.dataset.dir,performance.now()))nudge(b.dataset.dir);pointers.set(e.pointerId,b.dataset.dir);b.classList.add('held');});
+  const clear=e=>{pointers.delete(e.pointerId);aimControls.release('pointer:'+e.pointerId);b.classList.remove('held');};['pointerup','pointercancel','lostpointercapture'].forEach(t=>b.addEventListener(t,clear));
  });
  $('throw').addEventListener('pointerdown',e=>{if(!canThrow()||throwPointer!==null)return;e.preventDefault();throwPointer=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);begin('pointer');});
  $('throw').addEventListener('pointerup',e=>{if(e.pointerId!==throwPointer)return;throwPointer=null;release('pointer');});

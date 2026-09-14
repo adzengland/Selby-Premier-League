@@ -963,14 +963,16 @@ function route() {
 
   const app = document.querySelector("#app");
   const hideSprint=window.SPL_CONFIG?.SPRINT_HIDE_SIGNED_OUT!==false;
-  document.querySelectorAll('[data-route="sprint"],[data-route="clock"]').forEach(a=>{a.style.display=hideSprint&&!state.user?'none':'';});
+  document.querySelectorAll('[data-route="sprint"],[data-route="clock"],[data-route="checkout"]').forEach(a=>{a.style.display=hideSprint&&!state.user?'none':'';});
+
+  const menu=document.querySelector('#minigamesMenu');if(menu){menu.hidden=hideSprint&&!state.user;menu.classList.toggle('active',['sprint','clock','checkout'].includes(routeName));}
 
   // Preserve the mounted game through auth refresh and league-data reloads.
-  if (routeName === "sprint" || routeName === "clock") {
+  if (routeName === "sprint" || routeName === "clock" || routeName === "checkout") {
     if(hideSprint&&!state.user){document.body.classList.remove('sprint-mobile-playing');app.innerHTML='<section class="hero"><h1>Player games</h1><p>Sign in with your player account to play.</p><a class="btn" href="#profile">Player Login</a></section>';return;}
     if (document.getElementById("spl-sprint-frame") && document.getElementById("spl-sprint-frame").dataset.game !== routeName) app.replaceChildren();
     if (!document.getElementById("spl-sprint-frame")) {
-      app.innerHTML = '<iframe id="spl-sprint-frame" title="SPL game and leaderboard" src="./' + (routeName==='clock'?'clock':'sprint') + '/?embedded=1&v=clock-release1" style="display:block;width:100%;height:1100px;border:0;background:transparent" scrolling="no"></iframe>';
+      app.innerHTML = '<iframe id="spl-sprint-frame" title="SPL game and leaderboard" src="./' + (routeName==='checkout'?'checkout':routeName==='clock'?'clock':'sprint') + '/?embedded=1&v=minigames2" style="display:block;width:100%;height:1100px;border:0;background:transparent" scrolling="no"></iframe>';
     }
     document.getElementById('spl-sprint-frame').dataset.game=routeName;
     return;
@@ -1030,13 +1032,13 @@ window.addEventListener("message", event => {
 
 // SPL mobile viewport and play focus. Only the embedded same-origin game can trigger it.
 (()=>{
- const style=document.createElement('style');style.textContent='@media(max-width:650px){body.sprint-mobile-playing .site-header{min-height:44px;height:44px;padding:0;gap:0}body.sprint-mobile-playing .site-header .brand{display:none}body.sprint-mobile-playing .nav{display:flex;flex-wrap:nowrap;width:100%;overflow:auto;gap:0}body.sprint-mobile-playing .nav a{padding:10px 8px;font-size:12px;white-space:nowrap}body.sprint-mobile-playing .content{padding-top:8px}}';document.head.append(style);
+ const style=document.createElement('style');style.textContent='@media(max-width:650px){body.sprint-mobile-playing .site-header{min-height:44px;height:44px;padding:0;gap:0}body.sprint-mobile-playing .site-header .brand{display:flex}body.sprint-mobile-playing .nav{display:flex;flex-wrap:nowrap;overflow:visible;gap:0}body.sprint-mobile-playing .nav a{padding:10px 8px;font-size:12px;white-space:nowrap}body.sprint-mobile-playing .content{padding-top:8px}}';document.head.append(style);
  const send=()=>{const f=document.getElementById('spl-sprint-frame');if(!f)return;const h=window.visualViewport?.height||innerHeight;const header=document.querySelector('.site-header').getBoundingClientRect().height;f.contentWindow.postMessage({type:'spl-play-viewport',height:Math.max(240,h-header-18)},location.origin);};
  addEventListener('message',e=>{const f=document.getElementById('spl-sprint-frame');if(!f||e.source!==f.contentWindow||e.origin!==location.origin)return;
   if(e.data?.type==='spl-mobile-ready')send();
   if(e.data?.type==='spl-mobile-play'){document.body.classList.toggle('sprint-mobile-playing',!!e.data.active);requestAnimationFrame(()=>{send();if(e.data.active&&matchMedia('(max-width:650px)').matches){const y=f.getBoundingClientRect().top+scrollY-document.querySelector('.site-header').getBoundingClientRect().height-8;window.scrollTo({top:y,behavior:'instant'});}});}
  });
  addEventListener('resize',send);window.visualViewport?.addEventListener('resize',send);
- addEventListener('hashchange',()=>{if(!['#sprint','#clock'].includes(location.hash))document.body.classList.remove('sprint-mobile-playing');});
+ addEventListener('hashchange',()=>{if(!['#sprint','#clock','#checkout'].includes(location.hash))document.body.classList.remove('sprint-mobile-playing');});
 })();
 

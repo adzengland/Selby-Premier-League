@@ -9,24 +9,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css" />
-<link rel="stylesheet" href="./account.css?v=clock-release1"><link rel="stylesheet" href="./scorer/scorer.css?v=delete3"></head>
+<link rel="stylesheet" href="./account.css?v=clock-release1"><link rel="stylesheet" href="./scorer/scorer.css?v=delete3"><link rel="stylesheet" href="./navigation.css?v=minigames2"></head>
 <body>
   <div class="app-shell">
     <header class="site-header">
       <a class="brand" href="#home" aria-label="Selby Premier League home">
         <img src="./assets/spl.png" alt="Selby Premier League" onerror="this.style.display='none'" />
-        <div>
-          <span class="eyebrow">Darts</span>
-          <strong>Selby Premier League</strong>
-        </div>
+
       </a>
 
       <nav class="nav" aria-label="Main navigation">
-        <a href="#home" data-route="home">Home</a>
         <a href="#fixtures" data-route="fixtures">Fixtures</a>
         <a href="#table" data-route="table">Table</a>
         <a href="#players" data-route="players">Players</a>
-        <a href="#sprint" data-route="sprint">501 Sprint</a><a href="#clock" data-route="clock">Around the Clock</a>
+        <details id="minigamesMenu" class="minigames-menu" hidden><summary>Minigames</summary><div class="minigames-links"><a href="#sprint" data-route="sprint">501 Sprint</a><a href="#clock" data-route="clock">Around the Clock</a><a href="#checkout" data-route="checkout">Checkout Challenge</a></div></details>
       </nav>
       <a id="siteAccount" class="site-account" href="#account" aria-label="Sign in to your account"><span class="site-account-avatar" aria-hidden="true">↪</span><span class="site-account-name">Sign in</span></a>
     </header>
@@ -41,6 +37,6 @@
 
   <script src="./config.js"></script>
   <script src="./sprint/vendor/supabase-2.57.4.js"></script>
-  <script src="./app.js?v=scorer-delete3"></script>
-<script src="./scorer/engine.js?v=release1"></script><script src="./scorer/api.js?v=undo5"></script><script src="./scorer/scorer.js?v=undo5"></script></body>
+  <script src="./app.js?v=minigames2"></script>
+<script src="./scorer/engine.js?v=release1"></script><script src="./scorer/api.js?v=undo5"></script><script src="./scorer/scorer.js?v=undo5"></script><script src="./navigation.js?v=minigames2"></script></body>
 </html>

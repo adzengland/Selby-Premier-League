@@ -553,7 +553,7 @@ function renderHome() {
       <img class="hero-logo" src="./assets/spl.png" alt="">
       <span class="kicker">2026/27 Season</span>
       <h1>Selby Premier League</h1>
-      <p>Ten Players. Nine rounds. First to five legs. Welcome to average darts at it's very best.</p>
+      <p>Ten Players. Nine Rounds. First to Five Legs. Welcome to the Home of Average Darts.</p>
     </section>
 
     <section class="section grid three">

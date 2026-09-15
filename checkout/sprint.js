@@ -7,6 +7,8 @@
  const client=sharedClient||(window.supabase&&config.SUPABASE_URL&&config.SUPABASE_ANON_KEY
   ?window.supabase.createClient(config.SUPABASE_URL,config.SUPABASE_ANON_KEY):null);
  const canvas=$('play'),ctx=canvas.getContext('2d'),dart=$('dartAsset');
+ let guest=null;
+ const gameRPC=(name,args)=>guest?guest.rpc(name,args):client.rpc(name,args);
  const keys=new Set(),pointers=new Map(),aimControls=window.SPL_AIM_CONTROLS.create();
  let successFlashUntil=0;
  let collectTimer=null;
@@ -68,7 +70,7 @@
    document.querySelector('.result-card h2').textContent=game.reason==='bust'?'BUST · GAME OVER':'TIME UP!';
    $('finishMetrics').replaceChildren(...[['CHECKOUTS',game.checkouts],['TIME PLAYED',time(game.elapsed_ms)],['DARTS',game.total_darts]].map(([label,value])=>{const item=document.createElement('div'),number=document.createElement('strong'),caption=document.createElement('small');number.textContent=value;caption.textContent=label;item.append(number,caption);return item;}));
   }
-  $('startRanked').hidden=!!game||!player;$('startRanked').disabled=busy||!!pending;
+  $('startRanked').hidden=!!game||!player;$('startRanked').disabled=busy||!!pending;guestUI();
  }
  function identity(){
   document.querySelectorAll('[data-player-name]').forEach(e=>e.textContent=player?.name||'SPL PLAYER');
@@ -78,6 +80,7 @@
   });
  }
  async function checkAuth(){
+  if(guest)return;
   const check=++authCheck;
   if(!client){$('authMessage').textContent='The site connection is not configured. Please contact the league organiser.';return;}
   const {data,error}=await client.auth.getUser();
@@ -95,7 +98,7 @@
   if(check!==authCheck)return;
   player=profileError?null:profile;identity();
   $('authMessage').textContent=profileError?'This account cannot play yet: '+friendly(profileError):`Signed in as ${player.name}. Results are saved to your Checkout Challenge leaderboard.`;
-  $('loginLinks').hidden=!profileError;$('authBanner').hidden=false;
+  $('loginLinks').hidden=!profileError;$('authBanner').hidden=false;if(player)loadBoard();
   notice(profileError?'Ask the league organiser to check the player link and Checkout Challenge setup.':'Start a game when you are ready. The clock starts on your first throw.');update();
  }
  function friendly(error){
@@ -107,7 +110,7 @@
   if(!pending||busy)return;
   const op=pending,version=epoch,oldDarts=game?.total_darts||0;let succeeded=false;busy=true;update();notice(op.kind==='throw'?'Dart in flight…':'Saving…');
   try{
-   const {data,error}=await client.rpc(op.name,op.args);
+   const {data,error}=await gameRPC(op.name,op.args);
    if(version!==epoch)return;
    if(error)throw error;
    pending=null;apply(data);succeeded=true;
@@ -155,7 +158,7 @@
   if(ticking||busy||pending||!game||game.status!=='active'||game.started===null||elapsed()>0||performance.now()-lastSync<2000)return;
   lastSync=performance.now();
   ticking=true;const version=epoch,id=game.id;
-  try{const {data,error}=await client.rpc('checkout_tick',{p_game_id:id});if(version===epoch&&game?.id===id){if(error)notice('Time up. Reconnecting to confirm your result…');else{apply(data);finish();update();}}}catch{if(version===epoch)notice('Time up. Reconnecting to confirm your result…');}finally{ticking=false;}
+  try{const {data,error}=await gameRPC('checkout_tick',{p_game_id:id});if(version===epoch&&game?.id===id){if(error)notice('Time up. Reconnecting to confirm your result…');else{apply(data);finish();update();}}}catch{if(version===epoch)notice('Time up. Reconnecting to confirm your result…');}finally{ticking=false;}
  }
  const clockTimer=setInterval(tick,100);
  function start(){
@@ -236,8 +239,20 @@
   if(urgent&&!document.hidden){const second=Math.ceil(left/1000);if(second!==lastCountdownSecond){lastCountdownSecond=second;window.SPL_DART_AUDIO?.tick();}}else lastCountdownSecond=null;
   document.querySelectorAll('[data-time]').forEach(e=>e.textContent=time(left));requestAnimationFrame(frame);
  }
+
+ const guestButton=document.createElement('button');guestButton.id='playPractice';guestButton.className='btn';guestButton.textContent='PRACTICE';
+ const loginButton=document.createElement('a');loginButton.className='btn';loginButton.href='../#account';loginButton.target='_top';loginButton.textContent='LOGIN';$('authBanner').append(loginButton,guestButton);
+ const guestCard=document.createElement('div');guestCard.id='resultShare';document.querySelector('.result-card').append(guestCard);const resultCard=window.SPL_RESULT_CARD.mount(guestCard);
+ guestButton.onclick=()=>{if(user)return;authCheck++;epoch++;stopAutoCollect();cancel();pending=null;busy=false;game=null;hits=[];shots=[];guest=window.SPL_GUEST.create('checkout');player={name:'Practice',avatar_url:null};identity();update();start();};
+
+ function guestUI(){guestButton.hidden=!!user||!!guest;loginButton.hidden=!!user;$('loginLinks').hidden=true;guestCard.hidden=game?.status!=='completed';$('viewOverall').hidden=!!guest;$('leaderboard').hidden=!user||!!guest;
+ if(!user&&!guest)$('authMessage').textContent='Log in or play a practice game.';
+ if(guest){$('authMessage').textContent='Practice · local play';$('restart').textContent='NEW PRACTICE GAME';$('state').textContent='PRACTICE';if(game?.status==='completed'){$('finishRank').textContent='Practice result';if('checkout'==='sprint')$('checkout').textContent='GAME SHOT';}}
+ if(game?.status==='completed'){const rows=[['Checkouts',game.checkouts],['Time played',time(game.elapsed_ms)],['Darts',game.total_darts],['Ended by',game.reason==='bust'?'Bust':'Time up']];resultCard.set({id:game.id,mode:'Checkout Challenge',playerName:guest?'':player?.name,headline:game.checkouts+' checkouts',rows});}else resultCard.set(null);
+ }
  let boardLoad=0;
  async function loadBoard(){
+  if(guest||!user){if(guest&&game?.status==='completed'){ $('finishRank').textContent='Practice result';notice('Practice result — not submitted to a leaderboard.');}return;}
   if(!client)return;const version=++boardLoad;$('leaderboardStatus').textContent='Loading scores…';
   try{
    const {data,error}=await client.rpc('checkout_leaderboard');if(version!==boardLoad)return;if(error)throw error;
@@ -274,6 +289,7 @@
  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel();else checkAuth();});
  $('viewOverall').onclick=e=>{e.preventDefault();$('leaderboard').focus({preventScroll:true});$('leaderboard').scrollIntoView({behavior:'instant',block:'start'});loadBoard();};$('resetGame').onclick=start;$('playAgain').onclick=start;$('restart').onclick=start;$('startRanked').onclick=start;$('collect').onclick=collect;$('retry').onclick=runPending;$('refreshScores').onclick=loadBoard;
  const authListener=client?.auth.onAuthStateChange((event,session)=>{
+  if(guest){if(!session?.user)return;guest=null;epoch++;game=player=null;pending=null;busy=false;cancel();}
   // Never await Supabase calls inside its auth callback (avoids auth lock deadlock).
   if(event==='SIGNED_OUT'||(authUserId&&session?.user?.id!==authUserId)){
    epoch++;authCheck++;cancel();user=player=game=null;pending=null;busy=false;hits=[];shots=[];identity();update();

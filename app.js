@@ -553,7 +553,7 @@ function renderHome() {
       <img class="hero-logo" src="./assets/spl.png" alt="">
       <span class="kicker">2026/27 Season</span>
       <h1>Selby Premier League</h1>
-      <p>Ten Players. Nine Rounds. First to Five Legs. Welcome to the Home of Average Darts.</p>
+      <p>Ten Players. Nine rounds. First to five legs. Welcome to average darts at it's very best.</p>
     </section>
 
     <section class="section grid three">
@@ -962,7 +962,7 @@ function route() {
   });
 
   const app = document.querySelector("#app");
-  const hideSprint=window.SPL_CONFIG?.SPRINT_HIDE_SIGNED_OUT!==false;
+  const hideSprint=false; // Public minigames offer local Guest Mode.
   document.querySelectorAll('[data-route="sprint"],[data-route="clock"],[data-route="checkout"]').forEach(a=>{a.style.display=hideSprint&&!state.user?'none':'';});
 
   const menu=document.querySelector('#minigamesMenu');if(menu){menu.hidden=hideSprint&&!state.user;menu.classList.toggle('active',['sprint','clock','checkout'].includes(routeName));}
@@ -972,7 +972,7 @@ function route() {
     if(hideSprint&&!state.user){document.body.classList.remove('sprint-mobile-playing');app.innerHTML='<section class="hero"><h1>Player games</h1><p>Sign in with your player account to play.</p><a class="btn" href="#profile">Player Login</a></section>';return;}
     if (document.getElementById("spl-sprint-frame") && document.getElementById("spl-sprint-frame").dataset.game !== routeName) app.replaceChildren();
     if (!document.getElementById("spl-sprint-frame")) {
-      app.innerHTML = '<iframe id="spl-sprint-frame" title="SPL game and leaderboard" src="./' + (routeName==='checkout'?'checkout':routeName==='clock'?'clock':'sprint') + '/?embedded=1&v=minigames2" style="display:block;width:100%;height:1100px;border:0;background:transparent" scrolling="no"></iframe>';
+      app.innerHTML = '<iframe id="spl-sprint-frame" title="SPL game and leaderboard" src="./' + (routeName==='checkout'?'checkout':routeName==='clock'?'clock':'sprint') + '/?embedded=1&v=practice1" style="display:block;width:100%;height:1100px;border:0;background:transparent" scrolling="no"></iframe>';
     }
     document.getElementById('spl-sprint-frame').dataset.game=routeName;
     return;

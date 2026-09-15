@@ -1,119 +1,213 @@
-# Selby Premier League
+# 🎯 Selby Premier League
 
-The site is now configured for live Supabase data.
+The official website and darts platform for the **Selby Premier League**.
 
-## Current live setup
+What started as a simple league table has got slightly out of hand.
 
-- Supabase project URL is configured in `config.js`
-- Public league pages read directly from Supabase
-- Admin page uses Supabase email/password authentication
-- Only users listed in `admin_users` can write
-- Fixtures, hosts, dates, scores and averages are stored centrally
-- League standings recalculate automatically
+The platform now combines league management, player profiles, statistics,
+live scoring tools and competitive darts games in one responsive web app.
 
-## League rules
+## 🌐 Live Site
+
+https://selby-premier-league.pages.dev/
+
+Hosted on **Cloudflare Pages**, with **Supabase** providing authentication,
+database storage, security and server-side game logic.
+
+---
+
+## 🏆 The League
+
+The Selby Premier League consists of:
 
 - 10 players
 - 9 rounds
 - Everyone plays everyone once
-- 5 matches per round / 45 total
-- Each match is first to 5 legs
-- League ranked by leg difference
-- Exact final tie can be settled by playoff
-- Round 1: 24 October 2026, hosted by Bob Wilcockson
-- Rounds 2–9: date and host editable
+- 5 matches per round
+- 45 matches per season
+- First to 5 legs
+- League position determined by leg difference
+- Exact final ties may be settled by playoff
 
-## Before deploying
+### Match statistics
 
-Make sure your Supabase admin user has been inserted into `public.admin_users`.
+Each match records:
 
-Then deploy the whole folder to Cloudflare Pages.
+- Result
+- Legs won / lost
+- Leg difference
+- Player match averages
 
-## Cloudflare Pages
+Season statistics are calculated automatically from completed fixtures.
 
-1. Create a GitHub repository, e.g. `selby-premier-league`
-2. Upload all files from this folder
-3. In Cloudflare: Workers & Pages > Create > Pages > Connect to Git
-4. Select the repository
-5. Build command: leave blank
-6. Build output directory: `/`
-7. Deploy
+---
 
-The site will receive a free `*.pages.dev` address.
+## 🎯 Platform Features
 
-## Security note
+### League
 
-The value in `config.js` is a Supabase publishable key, which is intended for browser use. The database password and Supabase service-role/secret keys must never be added to the website.
+The main SPL site provides:
 
-## Player profiles
+- Fixtures and round schedule
+- League table
+- Player profiles
+- Match results
+- Season averages
+- Highest match averages
+- Recent player form
+- League statistics
+- Head-to-head data
 
-This version includes self-service player profiles.
+League data is stored centrally in Supabase and public pages update from
+the live database.
 
-Before deploying it, run `player-profiles-migration.sql` in Supabase SQL Editor.
+### Player Accounts
 
-Then create one Supabase Auth user per player and link that user's UUID to the matching row in `public.players`, for example:
+Players have individual SPL accounts linked to their player record.
 
-```sql
-update public.players
-set user_id = 'AUTH-USER-UUID-HERE'
-where name = 'Adam England';
-```
+Players can:
 
-Players can then sign in through the existing Admin/Profile login, edit only their own nickname, bio, walk-on song and avatar, while the SPL admin retains league-management access.
+- Sign in using their name and issued password
+- Maintain their own public profile
+- Upload a profile image
+- Set a nickname
+- Add a bio
+- Set a walk-on song
+- Access authenticated SPL games
 
-Avatar images are stored in the public `player-avatars` Supabase Storage bucket and are restricted so authenticated users can only write inside their own UUID folder.
+Player authentication uses Supabase Auth. Internal synthetic identifiers
+are hidden from the player-facing login experience.
 
-## Simple player login
+### Administration
 
-The public site now asks players to select their name and enter a password. Internally,
-Supabase still authenticates using a synthetic `@spl.internal` identifier, but players
-never need to know or enter it.
+League administration is separate from normal player authentication.
 
-Use `player-login-setup.sql` as the account setup guide. Create each account in
-Supabase Authentication, auto-confirm it, give it a password, then link its User UID
-to the matching `public.players.user_id`.
+Administrators can manage:
 
-Do not enable email-based password recovery for these synthetic accounts; Adam/admin
-can reset a player's password from Supabase Authentication if required.
+- Fixtures
+- Round dates
+- Hosts
+- Match results
+- Player averages
+- League data
 
+Administrative write access is controlled through Supabase rather than
+being trusted to the browser.
 
-## Auth separation / public profiles
+---
 
-This version separates the two login paths:
+# 🕹️ SPL Games
 
-- Normal players: Players > Player Login > name + issued password.
-- Adam/admin: Admin > original admin email/password OR Continue with Google.
-- Adam's existing Auth UUID can still be linked to the Adam England player row, so one identity is both admin and player without using the faux player login.
-- Player profile cards are public to everyone.
-- Profile edits go through `update_own_player_profile`, which only updates nickname, bio, walk-on song and avatar for the currently authenticated player's own linked row.
+## 501 Sprint
 
-Run `profile-auth-security-fix.sql` in Supabase SQL Editor before deploying this version.
+A single-player speed challenge starting from 501.
 
+The objective is simple:
 
-## Clickable public player profiles
+**Check out 501 in as few darts as possible.**
 
-Player cards now open dedicated public profile pages showing:
-- avatar
-- nickname
-- bio
-- walk-on song
-- played / won / lost / leg difference
-- season average
-- highest match average
-- five most recent completed results
+Rules include:
 
-Players can still edit only their own profile through Player Login. Admin authentication remains separate under Admin.
+- Standard dartboard scoring
+- Three-dart visits
+- Proper bust rules
+- Double-out finish
+- Bullseye counts as double 25
+- Wire bouncers
+- Power-based throwing
+- Player-controlled aiming
+- Persistent authenticated results
 
+The leaderboard ranks each player's best performance by:
 
-## Full public player profile display
+1. Fewest darts
+2. Fastest completion time
 
-Public player pages now show all profile information currently captured by the editor:
-- avatar / profile image
-- real name
-- nickname
-- bio
-- walk-on song
-- current season statistics
-- recent match history
+Game scoring and timing are validated server-side.
 
-Only the authenticated owner of the profile can edit their profile. Everyone can view the public profile.
+---
+
+## Around the Clock
+
+A speed-based Around the Clock challenge.
+
+Players progress through:
+
+**1 → 20 → Outer Bull → Inner Bull**
+
+Multipliers accelerate progress:
+
+- Single = advance 1
+- Double = advance 2
+- Treble = advance 3
+
+The leaderboard is based purely on the player's fastest completion time.
+
+Dart count is recorded for statistics but is not used as a tiebreak.
+
+---
+
+## 🎯 Darts Engine
+
+The games share a browser-based darts simulation featuring:
+
+- Real dartboard geometry
+- Single / double / treble detection
+- Outer and inner bull detection
+- Wire / bounce-out behaviour
+- Power-controlled throws
+- Aim movement and natural wobble
+- Three-dart visits
+- Desktop keyboard controls
+- Mobile controls
+- Sound and visual effects
+
+Authoritative scoring is handled through Supabase database functions rather
+than accepting a final score supplied by the browser.
+
+This reduces casual score manipulation, although the games are not intended
+to provide bot-proof competitive anti-cheat.
+
+---
+
+# 📊 Statistics
+
+The statistics area expands the league beyond the basic standings.
+
+The platform is designed to support statistics including:
+
+- Player records
+- Match averages
+- Highest averages
+- Leg performance
+- Head-to-head records
+- Recent form
+- Game leaderboards
+- Historical SPL performance
+
+Additional statistics and visualisations will continue to be added as the
+league generates more match data.
+
+---
+
+# 🧱 Project Structure
+
+```text
+/
+├── assets/          Shared site artwork and media
+├── checkout/        Checkout-related functionality
+├── clock/           Around the Clock game
+├── database/        Supabase SQL installation and verification
+├── scorer/          Darts scoring functionality
+├── shared/          Shared game/site components
+├── sprint/          501 Sprint
+├── stats/           League statistics
+│
+├── index.html       Main application shell
+├── app.js           Core league application
+├── styles.css       Main site styling
+├── navigation.js    Shared navigation
+├── navigation.css   Navigation styling
+├── account.css      Player/account interface
+├── config.js        Public Supabase configuration
+└── schema.sql       Core league database schema

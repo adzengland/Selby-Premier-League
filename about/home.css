@@ -1,0 +1,4 @@
+/* Homepage uses the same headline and lime closing statement as the About finale. */
+.home-history-hero h1{font-size:clamp(3.5rem,8vw,6rem);margin-top:20px}
+.home-history-hero h2{position:relative;margin-top:34px;font-size:clamp(1.9rem,4vw,3rem);color:var(--accent);max-width:750px}
+@media(max-width:800px){.home-history-hero{padding:28px}.home-history-hero h1{font-size:clamp(3rem,10vw,5rem)}}

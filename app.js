@@ -549,11 +549,11 @@ function renderHome() {
   const nextRound = state.rounds.find(r => r.fixtures.some(f => f.s1 === null || f.s2 === null)) || state.rounds[0];
 
   return `
-    <section class="hero">
+    <section class="hero home-history-hero">
       <img class="hero-logo" src="./assets/spl.png" alt="">
       <span class="kicker">2026/27 Season</span>
-      <h1>Selby Premier League</h1>
-      <p>Ten Players. Nine Rounds. First to Five. Welcome to the Home of Average Darts.</p>
+      <h1>TEN PLAYERS.<br>NINE ROUNDS.</h1>
+      <h2>WELCOME TO THE HOME OF AVERAGE DARTS.</h2>
     </section>
 
     <section class="section grid three">
@@ -952,7 +952,7 @@ function updateSiteAccount(){
 }
 function route() {
   updateSiteAccount();
-  const routeName = (location.hash || "#home").slice(1);
+  const routeName = document.body.dataset.page === "about" ? "about" : (location.hash || "#home").slice(1);
   if (routeName.startsWith("score/") && window.SPLFixture) {window.SPLFixture.open(decodeURIComponent(routeName.slice(6))); return;}
   window.SPLFixture?.close();
   document.body.classList.remove("fixture-scoring");
@@ -966,6 +966,8 @@ function route() {
   document.querySelectorAll('[data-route="sprint"],[data-route="clock"],[data-route="checkout"]').forEach(a=>{a.style.display=hideSprint&&!state.user?'none':'';});
 
   const menu=document.querySelector('#minigamesMenu');if(menu){menu.hidden=hideSprint&&!state.user;menu.classList.toggle('active',['sprint','clock','checkout'].includes(routeName));}
+
+  if (routeName === "about") return; // Static history; retain the existing account/navigation updates.
 
   // Preserve the mounted game through auth refresh and league-data reloads.
   if (routeName === "sprint" || routeName === "clock" || routeName === "checkout") {

@@ -1,0 +1,2 @@
+/* One extra destination: wrap the existing navigation only on narrow screens. */
+@media(max-width:380px){.site-header .nav,body.sprint-mobile-playing .site-header .nav{flex-wrap:wrap;justify-content:center}.site-header .nav>a,body.sprint-mobile-playing .site-header .nav>a,.site-header .minigames-menu summary{padding:11px 6px}.site-header .minigames-links{right:-40px}}

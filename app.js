@@ -556,7 +556,8 @@ function renderHome() {
       <h2>WELCOME TO THE HOME OF AVERAGE DARTS.</h2>
     </section>
 
-    <section class="section grid three">
+    <section id="homeLatestNews" class="section card soft home-latest" aria-label="Latest news"><span class="kicker">Latest news</span><p>Loading…</p></section>
+<section class="section grid three">
       <div class="card soft">
         <div class="stat-value">${completedMatches()}/45</div>
         <div class="stat-label">Matches played</div>
@@ -575,7 +576,8 @@ function renderHome() {
       </div>
     </section>
 
-    <section class="section">
+    <section id="homeTotals" class="section grid three" aria-label="League totals"><div class="card soft"><div class="stat-value" data-total="maximums">…</div><div class="stat-label">Total 180’s</div></div><div class="card soft"><div class="stat-value" data-total="visits26">…</div><div class="stat-label">Total 26’s</div></div><div class="card soft"><div class="stat-value" data-total="madhouse">…</div><div class="stat-label">Trips to the Madhouse</div></div><p class="home-total-note" hidden role="status"></p></section>
+<section class="section">
       <div class="section-head">
         <div>
           <span class="kicker">Next up</span>
@@ -1010,6 +1012,7 @@ function route() {
     bindAdmin();
   } else {
     app.innerHTML = renderHome();
+    window.SPL_HOME?.mount();
   }
 }
 

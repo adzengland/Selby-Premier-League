@@ -6,6 +6,7 @@
  const unwrap=r=>{if(r.error)throw Error(r.error.message);return r.data;};
  async function cached(key,load){key=scope()+':'+key;const c=cache.get(key);if(c&&Date.now()<c.until)return structuredClone(c.data);if(!loading.has(key))loading.set(key,load().then(data=>{cache.set(key,{data,until:Date.now()+60000});return data;}).finally(()=>loading.delete(key)));return structuredClone(await loading.get(key));}
  window.SPL_NEWS_API={
+  latest:()=>cached("latest",async()=>unwrap(await db().from("spl_news").select("id,title,excerpt,published_at,images").eq("status","published").order("published_at",{ascending:false}).order("id",{ascending:false}).range(0,0))),
   list:(page,admin)=>cached(`list:${page}:${admin}`,async()=>{
    let q=db().from('spl_news').select('id,title,excerpt,status,published_at,created_at,images,youtube_id,revision').order(admin?'created_at':'published_at',{ascending:false}).order('id',{ascending:false});
    if(!admin)q=q.eq('status','published');

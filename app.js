@@ -967,6 +967,8 @@ function route() {
 
   const menu=document.querySelector('#minigamesMenu');if(menu){menu.hidden=hideSprint&&!state.user;menu.classList.toggle('active',['sprint','clock','checkout'].includes(routeName));}
 
+  if (routeName === "news" || routeName.startsWith("news/")) { window.SPL_NEWS.route(); return; }
+  window.SPL_NEWS?.leave();
   if (routeName === "about") return; // Static history; retain the existing account/navigation updates.
 
   // Preserve the mounted game through auth refresh and league-data reloads.

@@ -1,0 +1,20 @@
+(()=>{
+ const scores=new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 177, 180]),cache=new Map();let context,source,serial=0,last=null,finish=null;
+ let enabled=localStorage.getItem('spl-scorer-caller')!=='off';
+ let lastText='',lastSubmission=null;const status=text=>{lastText=text;const el=document.getElementById('callerStatus');if(el)el.textContent=text;};
+ function stop(){serial++;if(source){try{source.stop();}catch{}source=null;}if(finish){finish();finish=null;}}
+ function unlock(){if(!enabled)return;try{context||=new (window.AudioContext||window.webkitAudioContext)();if(context.state!=='running')context.resume().catch(()=>status('Tap Replay call to enable audio.'));}catch{status('Audio is unavailable in this browser.');}}
+ async function buffer(clip){if(!cache.has(clip)){const promise=fetch('./scorer/sounds/'+clip+'.wav').then(r=>{if(!r.ok)throw Error('Sound unavailable');return r.arrayBuffer();}).then(data=>context.decodeAudioData(data)).catch(e=>{cache.delete(clip);throw e;});cache.set(clip,promise);if(cache.size>12)cache.delete(cache.keys().next().value);}return cache.get(clip);}
+ async function play(call){stop();if(!enabled)return;unlock();const ticket=serial;
+ try{const sounds=await Promise.all(call.clips.map(buffer));if(ticket!==serial||!enabled)return;if(context.state!=='running'){status('Tap Replay call to enable audio.');return;}status(call.text);
+ for(const sound of sounds){if(ticket!==serial||!enabled)return;await new Promise(resolve=>{finish=resolve;const node=context.createBufferSource();source=node;node.buffer=sound;node.connect(context.destination);node.onended=()=>{if(source===node)finish=null;resolve();};node.start();});}
+ }catch{if(ticket===serial)status('Sound unavailable. Use Replay call to retry.');}}
+ function requireCall(s){if(s?.status!=='active')return null;const left=s.remaining[s.turn];return window.SPLScoring.checkout(left,3)&&scores.has(left)?{clips:['yourequire',left],text:'You require '+left}:null;}
+ function announce(call){if(!call)return;last=call;const replay=document.getElementById('replayCall');if(replay)replay.disabled=false;play(call);}
+ window.SPLCaller={unlock,stop,begin(s){announce(requireCall(s));},submitted(visit,s,key){if(!visit||key===lastSubmission)return;lastSubmission=key;
+ const call=visit.checkout?{clips:[s.status==='completed'?'gameshotandthematch':'game-shot-and-the-leg'],text:s.status==='completed'?'Game shot and the match':'Game shot and the leg'}:{clips:[visit.bust?0:visit.points],text:'Score: '+(visit.bust?0:visit.points)};
+ const next=requireCall(s);if(next){call.clips.push(...next.clips);call.text+=' · '+next.text;}announce(call);
+ }};
+ window.SPLCaller.controls=()=>`<div class="sc-caller"><button id="callerToggle" aria-pressed="${enabled}">Caller: ${enabled?'ON':'OFF'}</button><button id="replayCall" ${last?'':'disabled'}>Replay call</button><span id="callerStatus" role="status"></span></div>`;
+ document.addEventListener('click',e=>{if(e.target.closest('#callerToggle')){enabled=!enabled;localStorage.setItem('spl-scorer-caller',enabled?'on':'off');stop();const toggle=document.getElementById('callerToggle');toggle.textContent=enabled?'Caller: ON':'Caller: OFF';toggle.setAttribute('aria-pressed',String(enabled));if(enabled)unlock();status(enabled?'Caller ready':'Caller muted');}else if(e.target.closest('#replayCall')&&last){unlock();play(last);}});
+})();

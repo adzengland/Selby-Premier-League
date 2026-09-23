@@ -576,7 +576,7 @@ function renderHome() {
       </div>
     </section>
 
-    <section id="homeTotals" class="section grid three" aria-label="League totals"><div class="card soft"><div class="stat-value" data-total="maximums">…</div><div class="stat-label">Total 180’s</div></div><div class="card soft"><div class="stat-value" data-total="visits26">…</div><div class="stat-label">Total 26’s</div></div><div class="card soft"><div class="stat-value" data-total="madhouse">…</div><div class="stat-label">Trips to the Madhouse</div></div><p class="home-total-note" hidden role="status"></p></section>
+    <section id="homeTotals" class="section grid three" aria-label="League totals"><div class="card soft"><div class="stat-value" data-total="maximums">…</div><div class="stat-label">🔥Total 180’s</div></div><div class="card soft"><div class="stat-value" data-total="visits26">…</div><div class="stat-label">😬 Total 26’s</div></div><div class="card soft"><div class="stat-value" data-total="madhouse">…</div><div class="stat-label">🏚️ Trips to the Madhouse</div></div><p class="home-total-note" hidden role="status"></p></section>
 <section class="section">
       <div class="section-head">
         <div>

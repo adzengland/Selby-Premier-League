@@ -14,3 +14,11 @@
  .hub-profile-heading .kicker{font-size:11px;letter-spacing:1px}
  .hub-profile-heading p{font-size:14px}
 }
+
+/* Profile identity details: wrapping nickname pill and readable bio panel. */
+.hub-profile-heading>div>p{display:table;box-sizing:border-box;max-width:100%;margin:16px 0 0;padding:9px 18px;border:1px solid #64702b;border-radius:28px;background:#232b16;color:#e2f58a;font-weight:600;line-height:1.45;overflow-wrap:anywhere}
+.hub-bio{box-sizing:border-box;margin:22px 0 18px;padding:18px 22px;border:1px solid #343d48;border-radius:20px;background:#181e28;color:#dce3eb;line-height:1.7;max-width:100%}
+@media(max-width:600px){
+ .hub-profile-heading>div>p{padding:7px 12px;font-size:13px;margin-top:10px;border-radius:18px}
+ .hub-bio{padding:14px 16px;margin:18px 0 16px;font-size:14px;border-radius:16px;line-height:1.6}
+}

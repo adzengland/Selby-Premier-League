@@ -1,3 +1,4 @@
+const profileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PLAYERS = [
   "Bob Wilcockson",
   "Adam England",
@@ -292,13 +293,13 @@ function playerCard(player) {
     <a class="card player-card player-card-link" href="#player/${playerSlug(player.name)}" aria-label="View ${player.name} profile">
       <div class="player-avatar-wrap">
         ${player.avatar_url
-          ? `<img class="player-avatar" src="${player.avatar_url}" alt="${player.name}">`
+          ? `<img class="player-avatar" src="${profileText(player.avatar_url)}" alt="${player.name}">`
           : `<div class="player-avatar placeholder">${initials(player.name)}</div>`}
       </div>
       <div class="player-card-body">
         <span class="kicker">Player</span>
         <h3>${player.name}</h3>
-        ${player.nickname ? `<div class="nickname">"${player.nickname}"</div>` : ""}
+        ${player.nickname ? `<div class="nickname">"${profileText(player.nickname)}"</div>` : ""}
         <div class="player-stats">
           <div><strong>${stats.p}</strong><span>P</span></div>
           <div><strong>${stats.w}</strong><span>W</span></div>
@@ -329,16 +330,16 @@ function renderPlayerProfile(playerName) {
     <section class="profile-hero card">
       <div class="profile-hero-avatar">
         ${player.avatar_url
-          ? `<img class="player-avatar profile-large" src="${player.avatar_url}" alt="${player.name}">`
+          ? `<img class="player-avatar profile-large" src="${profileText(player.avatar_url)}" alt="${player.name}">`
           : `<div class="player-avatar placeholder profile-large">${initials(player.name)}</div>`}
       </div>
 
       <div class="profile-hero-copy">
         <span class="kicker">Selby Premier League</span>
         <h1>${player.name}</h1>
-        ${player.nickname ? `<div class="profile-nickname">"${player.nickname}"</div>` : ""}
+        ${player.nickname ? `<div class="profile-nickname">"${profileText(player.nickname)}"</div>` : ""}
         ${player.bio
-          ? `<p class="profile-bio">${player.bio}</p>`
+          ? `<p class="profile-bio">${profileText(player.bio)}</p>`
           : `<p class="profile-bio muted">No bio added yet.</p>`}
 
         <div class="profile-actions">
@@ -356,17 +357,17 @@ function renderPlayerProfile(playerName) {
       <div class="profile-details-grid">
         <div class="card profile-detail-card">
           <span class="profile-detail-label">Nickname</span>
-          <strong>${player.nickname || "—"}</strong>
+          <strong>${profileText(player.nickname || "—")}</strong>
         </div>
 
         <div class="card profile-detail-card">
           <span class="profile-detail-label">Walk-on song</span>
-          <strong>${player.walk_on_song || "—"}</strong>
+          <strong>${profileText(player.walk_on_song || "—")}</strong>
         </div>
 
         <div class="card profile-detail-card profile-detail-wide">
           <span class="profile-detail-label">Bio</span>
-          <div class="profile-detail-text">${player.bio || "No bio added yet."}</div>
+          <div class="profile-detail-text">${profileText(player.bio || "No bio added yet.")}</div>
         </div>
       </div>
     </section>
@@ -456,23 +457,23 @@ function renderProfileEditor() {
     <div class="card profile-editor">
       <div class="profile-preview">
         ${player.avatar_url
-          ? `<img class="player-avatar large" src="${player.avatar_url}" alt="${player.name}">`
+          ? `<img class="player-avatar large" src="${profileText(player.avatar_url)}" alt="${player.name}">`
           : `<div class="player-avatar placeholder large">${initials(player.name)}</div>`}
       </div>
 
       <div class="field">
         <label>Nickname</label>
-        <input id="profileNickname" type="text" maxlength="40" value="${player.nickname || ""}" placeholder="The Yorkshire Punisher">
+        <input id="profileNickname" type="text" maxlength="40" value="${profileText(player.nickname || "")}" placeholder="The Yorkshire Punisher">
       </div>
 
       <div class="field">
         <label>Walk-on song</label>
-        <input id="profileWalkOn" type="text" maxlength="120" value="${player.walk_on_song || ""}" placeholder="Artist – Track">
+        <input id="profileWalkOn" type="text" maxlength="120" value="${profileText(player.walk_on_song || "")}" placeholder="Artist – Track">
       </div>
 
       <div class="field">
         <label>Bio</label>
-        <textarea id="profileBio" maxlength="300" rows="5" placeholder="A few lines about your darts career...">${player.bio || ""}</textarea>
+        <textarea id="profileBio" maxlength="300" rows="5" placeholder="A few lines about your darts career...">${profileText(player.bio || "")}</textarea>
       </div>
 
       <div class="field">

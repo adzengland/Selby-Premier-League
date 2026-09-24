@@ -1,327 +1,159 @@
-# 🎯 Selby Premier League
+# Selby Premier League
 
-The official website and darts platform for the **Selby Premier League**.
+**TEN PLAYERS. NINE ROUNDS.**
 
-What started as a simple league table has got slightly out of hand.
+**WELCOME TO THE HOME OF AVERAGE DARTS.**
 
-The platform now combines league management, player profiles, statistics, live scoring tools and competitive darts games in one responsive web app.
+The home of the Selby Premier League: fixtures, results, player profiles, league statistics, news and three playable darts minigames. Built for following the league and scoring match nights on desktop, tablet and mobile.
 
-## 🌐 Live Site
+🎯 **[Visit the SPL website](https://selby-premier-league.pages.dev/)**
 
-https://selby-premier-league.pages.dev/
+## The league
 
-Hosted on **Cloudflare Pages**, with **Supabase** providing authentication, database storage, security and server-side game logic.
+- 10 players, 9 rounds and 45 scheduled matches.
+- Everyone plays everyone once, with 5 matches per round.
+- Matches are first to 5 legs, playing 501 with a double-out finish.
+- Standings are ordered by **legs for**, then **leg difference**.
+- Completed scorer results feed the fixtures, league table and player statistics.
 
----
+## What's on the site
 
-## 🏆 The League
+### Fixtures and match scoring
 
-The Selby Premier League consists of:
+Public fixtures and completed match summaries sit alongside an admin-only match scorer.
 
-- 10 players
-- 9 rounds
-- Everyone plays everyone once
-- 5 matches per round
-- 45 matches per season
-- First to 5 legs
-- League position determined by leg difference
-- Exact final ties may be settled by playoff
+- Bull-off selection determines who starts.
+- Touch-friendly dartboard input records individual darts and remaining scores.
+- Checkout suggestions update as darts are entered.
+- Last Dart supports correcting entries and returning to earlier visits.
+- Busts, double-outs and leg wins are handled by the scorer.
+- Spoken score calls, checkout requirements and leg/match announcements support match nights.
+- Player walk-on audio can be played before starting a match.
+- Admin match-score deletion removes the recorded result and updates derived standings.
 
-### Match statistics
+Submitted visits are saved through Supabase. League results are derived from recorded scoring, rather than manually overriding final leg totals.
 
-Each match records:
+### Players and statistics
 
-- Result
-- Legs won / lost
-- Leg difference
-- Player match averages
+- Public player profiles combine photos, nicknames, bios and statistics on one page.
+- Match summaries and charts show performance across the league.
+- Stats include averages, darts thrown, finishing performance and leg records.
+- Homepage totals track 180s, 26s and trips to the Madhouse across completed league matches.
+- Player cards and fixture avatars link to profiles.
+- Admins can edit player profiles and upload walk-on MP3s; visitors can play uploaded tracks.
 
-Season statistics are calculated automatically from completed fixtures.
+Checkout-attempt statistics are inferred from scorer data. They are estimates where a player's intended target cannot be known from the recorded dart alone.
 
----
+### News and league history
 
-## 🎯 Platform Features
+- Public News posts with titles, body text, timestamps, images and YouTube links.
+- Admin-only publishing and image uploads.
+- A latest-news card on the homepage.
+- An About page documenting the league's story through photos and video.
 
-### League
+## Minigames
 
-The main SPL site provides:
+All three games support local **Practice Mode** without signing in, plus authenticated competition using existing SPL player accounts.
 
-- Fixtures and round schedule
-- League table
-- Player profiles
-- Match results
-- Season averages
-- Highest match averages
-- Recent player form
-- League statistics
-- Head-to-head data
+| Game | Challenge | Competitive ranking |
+| --- | --- | --- |
+| **501 Sprint** | Finish 501 on a double | Fewest darts, then fastest time |
+| **Around the Clock** | Hit 1–20, then outer bull and inner bull | Fastest completion time |
+| **Checkout Challenge** | Complete random checkouts before time runs out | Number of successful checkouts |
 
-League data is stored centrally in Supabase and public pages update from the live database.
+Around the Clock doubles and trebles advance you faster, but jumps stop at outer bull: both bulls must still be completed.
 
-### Player Accounts
+Checkout Challenge starts with 60 seconds and adds 20 seconds per successful checkout. Difficulty increases as you progress. An impossible finish with the remaining darts resets the visit; a bust ends the run.
 
-Players have individual SPL accounts linked to their player record.
+### Controls
 
-Players can:
+- **Desktop:** WASD or arrow keys to aim; hold and release Space to throw.
+- **Mobile/tablet:** directional controls to aim; hold and release THROW for power.
+- Short presses give fine aiming adjustments; holding a direction accelerates movement.
+- Throwing power, wobble and bounce-outs are part of the challenge.
 
-- Sign in using their name and issued password
-- Maintain their own public profile
-- Upload a profile image
-- Set a nickname
-- Add a bio
-- Set a walk-on song
-- Access authenticated SPL games
+Practice gameplay stays in the browser and does not create Supabase gameplay records or submit leaderboard results. Competitive play uses authenticated server-side validation. Result images are generated locally as PNGs, with sharing or download depending on browser support.
 
-Player authentication uses Supabase Auth. Internal synthetic identifiers are hidden from the player-facing login experience.
+## How it's built
 
-### Administration
+The frontend is static **HTML, CSS and vanilla JavaScript**, hosted on **Cloudflare Pages**. There is no frontend framework or build step required.
 
-League administration is separate from normal player authentication.
-
-Administrators can manage fixtures, round dates, hosts, match results, player averages and league data.
-
-Administrative write access is controlled through Supabase rather than being trusted to the browser.
-
----
-
-# 🕹️ Game Modes
-
-## 501 Sprint
-
-A single-player speed challenge starting from 501.
-
-The objective is simple:
-
-**Check out 501 in as few darts as possible.**
-
-Rules include:
-
-- Standard dartboard scoring
-- Three-dart visits
-- Proper bust rules
-- Double-out finish
-- Bullseye counts as double 25
-- Wire bouncers
-- Power-based throwing
-- Player-controlled aiming
-- Persistent authenticated results
-
-The leaderboard ranks each player's best performance by:
-
-1. Fewest darts
-2. Fastest completion time
-
-Game scoring and timing are validated server-side.
-
-## Checkout Challenge
-
-A single-player finishing challenge built around one of the most important parts of darts: **getting out**.
-
-Players are given checkout targets and must find and hit a valid finishing route using standard darts checkout rules.
-
-The challenge adds another competitive SPL game mode alongside 501 Sprint and Around the Clock, with authenticated results and leaderboard performance tied back to the player's SPL identity.
-
----
-
-## Around the Clock
-
-A speed-based Around the Clock challenge.
-
-Players progress through:
-
-**1 → 20 → Outer Bull → Inner Bull**
-
-Multipliers accelerate progress:
-
-- Single = advance 1
-- Double = advance 2
-- Treble = advance 3
-
-The leaderboard is based purely on the player's fastest completion time.
-
-Dart count is recorded for statistics but is not used as a tiebreak.
-
-## 🎯 Darts Engine
-
-The games share a browser-based darts simulation featuring:
-
-- Real dartboard geometry
-- Single / double / treble detection
-- Outer and inner bull detection
-- Wire / bounce-out behaviour
-- Power-controlled throws
-- Aim movement and natural wobble
-- Three-dart visits
-- Desktop keyboard controls
-- Mobile controls
-- Sound and visual effects
-
-Authoritative scoring is handled through Supabase database functions rather than accepting a final score supplied by the browser.
-
-This reduces casual score manipulation, although the games are not intended to provide bot-proof competitive anti-cheat.
-
----
-
-# 📊 Statistics
-
-The statistics area expands the league beyond the basic standings.
-
-The platform is designed to support statistics including:
-
-- Player records
-- Match averages
-- Highest averages
-- Leg performance
-- Head-to-head records
-- Recent form
-- Game leaderboards
-- Historical SPL performance
-
-Additional statistics and visualisations will continue to be added as the league generates more match data.
-
----
-
-# 🧱 Project Structure
+**Supabase** provides authentication, PostgreSQL data, media storage and database functions. Row Level Security and server-side checks enforce access to writes and competitive results.
 
 ```text
-/
-├── assets/          Shared site artwork and media
-├── checkout/        Checkout Challenge game
-├── clock/           Around the Clock game
-├── database/        Supabase SQL installation and verification
-├── scorer/          Darts scoring functionality
-├── shared/          Shared game/site components
-├── sprint/          501 Sprint
-├── stats/           League statistics
-│
-├── index.html       Main application shell
-├── app.js           Core league application
-├── styles.css       Main site styling
-├── navigation.js    Shared navigation
-├── navigation.css   Navigation styling
-├── account.css      Player/account interface
-├── config.js        Public Supabase configuration
-└── schema.sql       Core league database schema
+GitHub → Cloudflare Pages → Static website
+                                  ↕
+                         Supabase Auth, database and storage
 ```
 
----
+The site keeps animation and interface updates local. Walk-on audio loads on demand, News images are compressed, and the minigame leaderboard system retains personal bests alongside the state needed for active games and retry protection. League scoring history is retained for corrections and statistics.
 
-# 🗄️ Technology
+## Repository layout
 
-The SPL deliberately uses a lightweight architecture.
+```text
+about/          League history page
+assets/         Shared branding and media
+checkout/       Checkout Challenge
+clock/          Around the Clock
+database/       SQL files included in the repository
+home/           Homepage features
+news/           News feed and administration
+profiles/       Player hub, editing and walk-on media
+scorer/         Match scorer, board input and caller sounds
+shared/         Shared minigame controls, practice logic and result cards
+sprint/         501 Sprint
+stats/          Public league and player statistics
+index.html      Main site shell
+app.js          Core league application
+styles.css      Main stylesheet
+navigation.*    Site navigation
+account.css     Account styling
+config.js       Browser-safe Supabase configuration
+```
 
-### Frontend
+## Running locally
 
-- HTML
-- CSS
-- Vanilla JavaScript
+1. Download or clone this repository.
+2. Keep the existing `config.js`. For a separate installation, use `config.example.js` as the template.
+3. Serve the repository root with a static HTTP server. For example, if Python is installed:
 
-There is no frontend framework or build pipeline required.
+   ```sh
+   python -m http.server 8000
+   ```
 
-### Backend
+4. Open [localhost:8000](http://localhost:8000/).
 
-**Supabase** provides:
+**A local frontend using the live Supabase configuration still accesses the live database.** Use a separate test project or an explicitly isolated preview build for test scoring and admin changes. Running on localhost does not automatically create a sandbox.
 
-- PostgreSQL database
-- Authentication
-- Row Level Security
-- Storage
-- RPC/database functions
-- Game validation
-- Persistent leaderboards
+## Updating the live website
 
-### Hosting
+1. Back up the current repository and review the update's installation instructions.
+2. If the release includes a database migration, apply only that release's required SQL to the existing Supabase project and run its verification checks.
+3. Upload or merge the supplied website files into their matching paths in this repository. For a package containing `website/`, upload its **contents**, not the enclosing folder.
+4. Preserve existing configuration, assets and files not replaced by the release.
+5. Commit to the branch connected to the existing Cloudflare Pages project and wait for deployment to succeed.
+6. Check the changed pages on desktop and mobile, including signed-out and authorised views where relevant.
 
-**Cloudflare Pages**
+Keep the existing working Cloudflare build settings. Static frontend updates do not require a new backend service.
 
-The production site deploys directly from this GitHub repository. Commits to the configured production branch are automatically deployed.
+### Database installation notes
 
----
+This repository has evolved through incremental releases. SQL files and older installation documents may describe individual releases rather than a complete current installation.
 
-# 🔐 Security Model
+**Do not run every SQL file or rerun `schema.sql` as a routine update.** Use the instructions supplied with the specific release being installed. A fresh Supabase project requires the complete applicable migration sequence; copying the frontend alone does not create its database functions or permissions.
 
-The public Supabase publishable key is intentionally available to the browser.
+## Access and security
 
-The application must never contain:
+| Visitor | Access |
+| --- | --- |
+| Public | League pages, published News, player profiles, match summaries, statistics, public media and Practice Mode |
+| Signed-in player | Public features, permitted own-profile updates and competitive minigames |
+| Authorised admin | Scoring, corrections, match-score deletion, News management and player/media administration |
 
-- Supabase service-role keys
-- Supabase secret keys
-- Database passwords
-- Private credentials
+The browser configuration contains the Supabase project URL and a public browser key. Never commit service-role keys, database passwords or other private credentials.
 
-Database permissions and Row Level Security remain the security boundary.
-
-Game data uses private schemas for internal game/shot state, with narrowly scoped public functions providing authenticated access.
-
-Players may only modify their own permitted profile information. Administrative league writes require an authorised administrator.
-
----
-
-# 🗃️ Database
-
-The project uses PostgreSQL through Supabase.
-
-Core league data includes:
-
-- Players
-- Rounds
-- Fixtures
-- League settings
-- Administrators
-
-Game systems maintain separate game and shot records while referencing the existing SPL player identity.
-
-Database changes and game installations are maintained in:
-
-`/database`
-
-Run production migrations using the Supabase SQL Editor with the appropriate administrator/postgres role.
-
-Do not expose private game schemas through the Supabase Data API.
+Hiding an admin button is not the security boundary: database permissions, RLS and authorised functions enforce access. Preserve those checks when changing the frontend.
 
 ---
 
-# 🚀 Deployment
-
-The site is deployed as a static application through Cloudflare Pages.
-
-No Node.js installation, npm build or server deployment is required.
-
-Typical deployment flow:
-
-**GitHub → Cloudflare Pages → Static SPL frontend → Supabase Auth / PostgreSQL / RPC**
-
-Database migrations should be installed and verified before frontend changes that depend on them are deployed.
-
-See the deployment documentation in the repository for release-specific instructions.
-
----
-
-# 🧪 Testing
-
-Game releases include checks covering areas such as:
-
-- Authentication
-- Player identity
-- Private table access
-- Cross-player requests
-- Dartboard scoring coordinates
-- Singles / doubles / trebles
-- Bulls
-- Bouncers
-- Bust behaviour
-- Three-dart visits
-- Timing
-- Retry/idempotency behaviour
-- Leaderboard ranking
-- Responsive/mobile behaviour
-
-Production behaviour should still be verified after deployment against the live Supabase project and Cloudflare-hosted site.
-
----
-
-# 🎯 Selby Premier League
-
-Ten Players. Nine rounds. First to five legs.
-
-**Welcome to average darts at it's very best.**
+Built for the SPL. Established 2025.

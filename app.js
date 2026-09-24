@@ -299,7 +299,7 @@ function playerCard(player) {
       <div class="player-card-body">
         <span class="kicker">Player</span>
         <h3>${player.name}</h3>
-        ${player.nickname ? `<div class="nickname">"${profileText(player.nickname)}"</div>` : ""}
+        ${player.nickname ? `<div class="nickname">${profileText(player.nickname)}</div>` : ""}
         <div class="player-stats">
           <div><strong>${stats.p}</strong><span>P</span></div>
           <div><strong>${stats.w}</strong><span>W</span></div>

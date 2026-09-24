@@ -22,3 +22,8 @@
  .hub-profile-heading>div>p{padding:7px 12px;font-size:13px;margin-top:10px;border-radius:18px}
  .hub-bio{padding:14px 16px;margin:18px 0 16px;font-size:14px;border-radius:16px;line-height:1.6}
 }
+
+/* Match roster nicknames to the profile pill. */
+.player-card-body{min-width:0}
+.player-card .nickname{display:table;box-sizing:border-box;max-width:100%;margin:10px 0 16px;padding:9px 18px;border:1px solid #64702b;border-radius:28px;background:#232b16;color:#e2f58a;font-weight:600;line-height:1.45;overflow-wrap:anywhere}
+@media(max-width:600px){.player-card .nickname{padding:7px 12px;font-size:13px;border-radius:18px}}

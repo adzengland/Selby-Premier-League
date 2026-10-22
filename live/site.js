@@ -1,0 +1,5 @@
+(()=>{'use strict';let stop=null,latest=null,queued=false;
+function paint(){document.querySelectorAll('[data-live-fixture]').forEach(box=>{const active=latest?.status==='active'&&String(latest.fixtureId)===box.dataset.liveFixture;let link=box.querySelector('.spl-watch-live');if(active&&!link){link=document.createElement('a');link.className='btn secondary spl-watch-live';link.href='./live/';link.target='_blank';link.rel='noopener';link.textContent='● Watch live';link.setAttribute('aria-label','Watch the live scoreboard');box.append(link);}else if(!active&&link)link.remove();});}
+function update(){queued=false;const present=!!document.querySelector('[data-live-fixture]');if(present&&!stop)stop=window.SPLLive.start({details:false,onData:data=>{latest=data;paint();},onStatus:ok=>{if(!ok){latest=null;paint();}}});else if(!present&&stop){stop();stop=null;latest=null;}paint();}
+new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(update);}}).observe(document.getElementById('app'),{childList:true,subtree:true});update();
+})();

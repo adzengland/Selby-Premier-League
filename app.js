@@ -955,7 +955,9 @@ function updateSiteAccount(){
 }
 function route() {
   updateSiteAccount();
+  window.SPLAvailability?.sync();
   const routeName = document.body.dataset.page === "about" ? "about" : (location.hash || "#home").slice(1);
+  if (routeName !== "availability") window.SPLAvailability?.leave();
   if (routeName.startsWith("score/") && window.SPLFixture) {window.SPLFixture.open(decodeURIComponent(routeName.slice(6))); return;}
   window.SPLFixture?.close();
   document.body.classList.remove("fixture-scoring");
@@ -970,6 +972,7 @@ function route() {
 
   const menu=document.querySelector('#minigamesMenu');if(menu){menu.hidden=hideSprint&&!state.user;menu.classList.toggle('active',['sprint','clock','checkout'].includes(routeName));}
 
+  if (routeName === "availability" && window.SPLAvailability) { window.SPL_NEWS?.leave(); window.SPLAvailability.open(); return; }
   if (routeName === "news" || routeName.startsWith("news/")) { window.SPL_NEWS.route(); return; }
   window.SPL_NEWS?.leave();
   if (routeName === "about") return; // Static history; retain the existing account/navigation updates.
